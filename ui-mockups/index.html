@@ -1,0 +1,746 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>紫云音乐 UI 稿</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <svg class="icon-sprite" aria-hidden="true">
+      <symbol id="icon-home" viewBox="0 0 24 24">
+        <path d="m3 11 9-7 9 7" />
+        <path d="M5 10v10h5v-6h4v6h5V10" />
+      </symbol>
+      <symbol id="icon-library" viewBox="0 0 24 24">
+        <path d="M4 19V5" />
+        <path d="M8 19V5" />
+        <path d="m12 19 8-2-3-12-8 2 3 12Z" />
+      </symbol>
+      <symbol id="icon-list-music" viewBox="0 0 24 24">
+        <path d="M9 18V5l10-2v13" />
+        <circle cx="6" cy="18" r="3" />
+        <circle cx="16" cy="16" r="3" />
+        <path d="M4 6H2" />
+        <path d="M4 10H2" />
+      </symbol>
+      <symbol id="icon-user" viewBox="0 0 24 24">
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21a8 8 0 0 1 16 0" />
+      </symbol>
+      <symbol id="icon-search" viewBox="0 0 24 24">
+        <circle cx="11" cy="11" r="7" />
+        <path d="m20 20-4-4" />
+      </symbol>
+      <symbol id="icon-cloud" viewBox="0 0 24 24">
+        <path d="M17 18a5 5 0 0 0 0-10 7 7 0 0 0-13 3 4 4 0 0 0 1 7Z" />
+      </symbol>
+      <symbol id="icon-wifi" viewBox="0 0 24 24">
+        <path d="M4 9a12 12 0 0 1 16 0" />
+        <path d="M8 13a6 6 0 0 1 8 0" />
+        <path d="M12 17h.01" />
+      </symbol>
+      <symbol id="icon-play" viewBox="0 0 24 24">
+        <path d="m8 5 11 7-11 7Z" />
+      </symbol>
+      <symbol id="icon-pause" viewBox="0 0 24 24">
+        <path d="M8 5v14" />
+        <path d="M16 5v14" />
+      </symbol>
+      <symbol id="icon-prev" viewBox="0 0 24 24">
+        <path d="M19 6v12" />
+        <path d="m15 6-9 6 9 6Z" />
+      </symbol>
+      <symbol id="icon-next" viewBox="0 0 24 24">
+        <path d="M5 6v12" />
+        <path d="m9 18 9-6-9-6Z" />
+      </symbol>
+      <symbol id="icon-heart" viewBox="0 0 24 24">
+        <path d="M20.8 5.6a5.4 5.4 0 0 0-7.6 0L12 6.8l-1.2-1.2a5.4 5.4 0 1 0-7.6 7.6L12 22l8.8-8.8a5.4 5.4 0 0 0 0-7.6Z" />
+      </symbol>
+      <symbol id="icon-download" viewBox="0 0 24 24">
+        <path d="M12 3v12" />
+        <path d="m7 10 5 5 5-5" />
+        <path d="M5 21h14" />
+      </symbol>
+      <symbol id="icon-folder" viewBox="0 0 24 24">
+        <path d="M3 7h7l2 2h9v10H3Z" />
+      </symbol>
+      <symbol id="icon-album" viewBox="0 0 24 24">
+        <rect x="4" y="4" width="16" height="16" rx="3" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="12" cy="12" r="1" />
+      </symbol>
+      <symbol id="icon-more" viewBox="0 0 24 24">
+        <circle cx="5" cy="12" r="1.5" />
+        <circle cx="12" cy="12" r="1.5" />
+        <circle cx="19" cy="12" r="1.5" />
+      </symbol>
+      <symbol id="icon-shield" viewBox="0 0 24 24">
+        <path d="M12 3 20 6v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6Z" />
+        <path d="m9 12 2 2 4-5" />
+      </symbol>
+      <symbol id="icon-check" viewBox="0 0 24 24">
+        <path d="m5 12 5 5L20 7" />
+      </symbol>
+      <symbol id="icon-queue" viewBox="0 0 24 24">
+        <path d="M4 6h16" />
+        <path d="M4 12h10" />
+        <path d="M4 18h8" />
+        <path d="m17 15 3 3-3 3" />
+      </symbol>
+      <symbol id="icon-shuffle" viewBox="0 0 24 24">
+        <path d="M4 7h4l8 10h4" />
+        <path d="M4 17h4l2-3" />
+        <path d="M14 7h6" />
+        <path d="m17 4 3 3-3 3" />
+        <path d="m17 14 3 3-3 3" />
+      </symbol>
+      <symbol id="icon-repeat" viewBox="0 0 24 24">
+        <path d="M17 2 21 6l-4 4" />
+        <path d="M3 11V9a3 3 0 0 1 3-3h15" />
+        <path d="M7 22 3 18l4-4" />
+        <path d="M21 13v2a3 3 0 0 1-3 3H3" />
+      </symbol>
+      <symbol id="icon-back" viewBox="0 0 24 24">
+        <path d="m15 18-6-6 6-6" />
+      </symbol>
+      <symbol id="icon-lock" viewBox="0 0 24 24">
+        <rect x="5" y="11" width="14" height="10" rx="2" />
+        <path d="M8 11V8a4 4 0 0 1 8 0v3" />
+      </symbol>
+      <symbol id="icon-storage" viewBox="0 0 24 24">
+        <ellipse cx="12" cy="5" rx="8" ry="3" />
+        <path d="M4 5v14c0 1.7 3.6 3 8 3s8-1.3 8-3V5" />
+        <path d="M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3" />
+      </symbol>
+      <symbol id="icon-settings" viewBox="0 0 24 24">
+        <path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z" />
+        <path d="M3 12h2m14 0h2M12 3v2m0 14v2m-6.4-2.6L7 17m10-10 1.4-1.4M5.6 5.6 7 7m10 10 1.4 1.4" />
+      </symbol>
+      <symbol id="icon-cast" viewBox="0 0 24 24">
+        <path d="M4 6h16v10" />
+        <path d="M4 18h.01" />
+        <path d="M4 14a4 4 0 0 1 4 4" />
+        <path d="M4 10a8 8 0 0 1 8 8" />
+      </symbol>
+      <symbol id="icon-sliders" viewBox="0 0 24 24">
+        <path d="M4 6h10" />
+        <path d="M18 6h2" />
+        <circle cx="16" cy="6" r="2" />
+        <path d="M4 12h2" />
+        <path d="M10 12h10" />
+        <circle cx="8" cy="12" r="2" />
+        <path d="M4 18h12" />
+        <path d="M20 18h0" />
+        <circle cx="18" cy="18" r="2" />
+      </symbol>
+      <symbol id="icon-moon" viewBox="0 0 24 24">
+        <path d="M20 15.5A8 8 0 0 1 8.5 4 8.5 8.5 0 1 0 20 15.5Z" />
+      </symbol>
+    </svg>
+
+    <header class="board-header">
+      <div class="board-title">
+        <span class="kicker">Synology NAS Music App</span>
+        <h1>紫云音乐 UI 稿</h1>
+        <p>基于产品方案整理的移动端核心页面稿：轻内容页、深色播放器、紫色品牌主轴，同时保留 NAS 私有库与离线能力的可信感。</p>
+      </div>
+      <div class="palette" aria-label="色彩规范">
+        <span style="--swatch: #7c3aed">Primary</span>
+        <span style="--swatch: #2e1065">Player</span>
+        <span style="--swatch: #06b6d4">NAS</span>
+        <span style="--swatch: #ec4899">Favorite</span>
+      </div>
+    </header>
+
+    <main class="mockup-board" aria-label="UI 画板">
+      <article class="mockup">
+        <h2>01 启动页</h2>
+        <div class="phone">
+          <section class="screen splash-screen dark-screen">
+            <div class="statusbar statusbar-dark">
+              <span>9:41</span>
+              <span>5G 100%</span>
+            </div>
+            <div class="splash-center">
+              <div class="app-mark">
+                <span>V</span>
+                <small>Music</small>
+              </div>
+              <h3>紫云音乐</h3>
+              <p>你的 Synology 私有音乐库</p>
+            </div>
+            <div class="sync-panel">
+              <div>
+                <strong>正在同步音乐库</strong>
+                <span>/music/hi-res/flac</span>
+              </div>
+              <div class="sync-progress" aria-hidden="true"><span></span></div>
+              <div class="status-chips">
+                <span><svg><use href="#icon-shield"></use></svg>HTTPS 已验证</span>
+                <span><svg><use href="#icon-cloud"></use></svg>NAS 在线</span>
+              </div>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <article class="mockup">
+        <h2>02 连接 NAS</h2>
+        <div class="phone">
+          <section class="screen connect-screen">
+            <div class="statusbar">
+              <span>9:41</span>
+              <span>Wi-Fi 88%</span>
+            </div>
+            <header class="screen-top">
+              <button class="icon-button" aria-label="返回"><svg><use href="#icon-back"></use></svg></button>
+              <div>
+                <h3>连接 NAS</h3>
+                <p>输入 DSM 地址，或选择局域网发现的设备。</p>
+              </div>
+            </header>
+            <div class="discovery-row">
+              <div class="nas-device">
+                <svg><use href="#icon-storage"></use></svg>
+                <div>
+                  <strong>DiskStation-Home</strong>
+                  <span>192.168.31.8 · Audio Station 可用</span>
+                </div>
+              </div>
+              <span class="pill success">已发现</span>
+            </div>
+            <form class="nas-form">
+              <label>
+                <span>NAS 地址</span>
+                <input value="https://home-nas.example.com:5001" aria-label="NAS 地址" />
+              </label>
+              <label>
+                <span>账号</span>
+                <input value="music_user" aria-label="账号" />
+              </label>
+              <label>
+                <span>密码</span>
+                <input type="password" placeholder="请输入密码" aria-label="密码" />
+              </label>
+              <label>
+                <span>两步验证码</span>
+                <input placeholder="可选" aria-label="两步验证码" />
+              </label>
+            </form>
+            <div class="toggle-list">
+              <div>
+                <span>校验证书</span>
+                <button class="toggle is-on" aria-label="校验证书已开启"><span></span></button>
+              </div>
+              <div>
+                <span>记住此 NAS</span>
+                <button class="toggle is-on" aria-label="记住此 NAS 已开启"><span></span></button>
+              </div>
+            </div>
+            <button class="primary-button"><svg><use href="#icon-lock"></use></svg>安全连接</button>
+            <button class="text-button">仅离线模式进入</button>
+          </section>
+        </div>
+      </article>
+
+      <article class="mockup">
+        <h2>03 首页</h2>
+        <div class="phone">
+          <section class="screen home-screen">
+            <div class="home-hero">
+              <div class="statusbar statusbar-dark">
+                <span>9:41</span>
+                <span>Wi-Fi 92%</span>
+              </div>
+              <div class="home-nav">
+                <div class="user-chip">
+                  <span class="avatar">云</span>
+                  <div>
+                    <strong>DiskStation-Home</strong>
+                    <small><i></i> 内网在线 · FLAC 原始播放</small>
+                  </div>
+                </div>
+                <button class="icon-button ghost" aria-label="搜索"><svg><use href="#icon-search"></use></svg></button>
+              </div>
+              <div class="search-pill">
+                <svg><use href="#icon-search"></use></svg>
+                <span>搜索歌曲、歌手、文件夹</span>
+              </div>
+            </div>
+            <div class="screen-scroll has-player">
+              <section class="content-block">
+                <div class="section-title">
+                  <h4>今日推荐</h4>
+                  <span>本地元数据生成</span>
+                </div>
+                <div class="recommend-list">
+                  <div class="song-row">
+                    <div class="cover art-2 thumb"></div>
+                    <div><strong>Lake Lights</strong><span>Yun Duo · Ambient</span></div>
+                    <em>3:48</em>
+                  </div>
+                  <div class="song-row">
+                    <div class="cover art-3 thumb"></div>
+                    <div><strong>南方夜航</strong><span>徐白 · 2021</span></div>
+                    <em>4:12</em>
+                  </div>
+                  <div class="song-row">
+                    <div class="cover art-4 thumb"></div>
+                    <div><strong>Private Cloud</strong><span>Northline · Synth</span></div>
+                    <em>5:06</em>
+                  </div>
+                </div>
+              </section>
+              <section class="content-block">
+                <div class="section-title">
+                  <h4>最近新增</h4>
+                  <span>12 张专辑</span>
+                </div>
+                <div class="album-strip">
+                  <div class="album-card"><div class="cover art-5"></div><strong>Archive 03</strong><span>18 首</span></div>
+                  <div class="album-card"><div class="cover art-6"></div><strong>Blue Room</strong><span>11 首</span></div>
+                  <div class="album-card"><div class="cover art-7"></div><strong>山谷回声</strong><span>9 首</span></div>
+                </div>
+              </section>
+            </div>
+            <div class="mini-player">
+              <div class="cover art-1 thumb"></div>
+              <div><strong>午夜电台</strong><span>NAS · 320kbps</span></div>
+              <button data-toggle-play aria-label="播放或暂停"><svg><use href="#icon-pause"></use></svg></button>
+              <button aria-label="播放队列"><svg><use href="#icon-queue"></use></svg></button>
+            </div>
+            <nav class="bottom-tabs">
+              <a class="active"><svg><use href="#icon-home"></use></svg><span>首页</span></a>
+              <a><svg><use href="#icon-library"></use></svg><span>音乐库</span></a>
+              <a><svg><use href="#icon-list-music"></use></svg><span>歌单</span></a>
+              <a><svg><use href="#icon-user"></use></svg><span>我的</span></a>
+            </nav>
+          </section>
+        </div>
+      </article>
+
+      <article class="mockup">
+        <h2>04 音乐库</h2>
+        <div class="phone">
+          <section class="screen library-screen">
+            <div class="statusbar">
+              <span>9:41</span>
+              <span>Wi-Fi 90%</span>
+            </div>
+            <header class="simple-header">
+              <div>
+                <h3>音乐库</h3>
+                <p>24,812 首 · 1.8 TB · 最近同步 2 分钟前</p>
+              </div>
+              <button class="icon-button" aria-label="搜索"><svg><use href="#icon-search"></use></svg></button>
+            </header>
+            <div class="library-summary">
+              <div><strong>812</strong><span>专辑</span></div>
+              <div><strong>1,944</strong><span>歌手</span></div>
+              <div><strong>128</strong><span>文件夹</span></div>
+            </div>
+            <nav class="segmented">
+              <button class="active">歌曲</button>
+              <button>专辑</button>
+              <button>歌手</button>
+              <button>文件夹</button>
+            </nav>
+            <section class="category-grid">
+              <button><svg><use href="#icon-album"></use></svg><span>风格</span><small>42</small></button>
+              <button><svg><use href="#icon-folder"></use></svg><span>年份</span><small>1998-2026</small></button>
+              <button><svg><use href="#icon-storage"></use></svg><span>Hi-Res</span><small>5,628</small></button>
+            </section>
+            <div class="sort-row">
+              <span>按标题排序</span>
+              <button>批量选择</button>
+            </div>
+            <section class="song-list with-index">
+              <div class="alpha-index"><span>A</span><span>B</span><span>C</span><span>D</span><span>F</span><span>L</span><span>M</span><span>S</span><span>Y</span></div>
+              <div class="song-row">
+                <div class="cover default-cover thumb"><span>A</span></div>
+                <div><strong>After Rain</strong><span>Studio North · FLAC</span></div>
+                <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+              </div>
+              <div class="song-row">
+                <div class="cover art-8 thumb"></div>
+                <div><strong>北站以南</strong><span>周寻 · 44.1kHz</span></div>
+                <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+              </div>
+              <div class="song-row">
+                <div class="cover art-6 thumb"></div>
+                <div><strong>Cold Drive</strong><span>Blue Room · MP3</span></div>
+                <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+              </div>
+              <div class="folder-row">
+                <svg><use href="#icon-folder"></use></svg>
+                <div><strong>/music/jazz/live</strong><span>126 个文件 · 可从此处播放</span></div>
+              </div>
+            </section>
+            <div class="mini-player compact">
+              <div class="cover art-1 thumb"></div>
+              <div><strong>午夜电台</strong><span>NAS</span></div>
+              <button data-toggle-play aria-label="播放或暂停"><svg><use href="#icon-pause"></use></svg></button>
+            </div>
+            <nav class="bottom-tabs">
+              <a><svg><use href="#icon-home"></use></svg><span>首页</span></a>
+              <a class="active"><svg><use href="#icon-library"></use></svg><span>音乐库</span></a>
+              <a><svg><use href="#icon-list-music"></use></svg><span>歌单</span></a>
+              <a><svg><use href="#icon-user"></use></svg><span>我的</span></a>
+            </nav>
+          </section>
+        </div>
+      </article>
+
+      <article class="mockup">
+        <h2>05 歌单详情</h2>
+        <div class="phone">
+          <section class="screen playlist-screen">
+            <div class="playlist-hero">
+              <div class="statusbar statusbar-dark">
+                <span>9:41</span>
+                <span>Wi-Fi 86%</span>
+              </div>
+              <header class="player-header">
+                <button class="icon-button ghost" aria-label="返回"><svg><use href="#icon-back"></use></svg></button>
+                <span>本地歌单</span>
+                <button class="icon-button ghost" aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+              </header>
+              <div class="playlist-info">
+                <div class="cover art-9 playlist-cover"></div>
+                <div>
+                  <h3>深夜私藏</h3>
+                  <p>86 首 · 5 小时 42 分钟</p>
+                  <span>更新于今天 08:16</span>
+                </div>
+              </div>
+            </div>
+            <div class="playlist-actions">
+              <button class="primary-button slim"><svg><use href="#icon-play"></use></svg>播放全部</button>
+              <button><svg><use href="#icon-shuffle"></use></svg></button>
+              <button><svg><use href="#icon-download"></use></svg></button>
+              <button><svg><use href="#icon-more"></use></svg></button>
+            </div>
+            <section class="song-list playlist-list">
+              <div class="song-row numbered">
+                <span>01</span>
+                <div><strong>Moon Bridge</strong><span>Low Island · 已下载</span></div>
+                <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+              </div>
+              <div class="song-row numbered active-song">
+                <span>02</span>
+                <div><strong>午夜电台</strong><span>陈以北 · 正在播放</span></div>
+                <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+              </div>
+              <div class="song-row numbered">
+                <span>03</span>
+                <div><strong>Riverside Tape</strong><span>Yun Duo · FLAC</span></div>
+                <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+              </div>
+              <div class="song-row numbered">
+                <span>04</span>
+                <div><strong>城市低频</strong><span>南风计划 · 24bit</span></div>
+                <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+              </div>
+              <div class="song-row numbered">
+                <span>05</span>
+                <div><strong>Quiet Server</strong><span>Northline · NAS</span></div>
+                <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+              </div>
+            </section>
+            <div class="mini-player compact">
+              <div class="cover art-1 thumb"></div>
+              <div><strong>午夜电台</strong><span>缓存 42%</span></div>
+              <button data-toggle-play aria-label="播放或暂停"><svg><use href="#icon-pause"></use></svg></button>
+            </div>
+          </section>
+        </div>
+      </article>
+
+      <article class="mockup">
+        <h2>06 搜索</h2>
+        <div class="phone">
+          <section class="screen search-screen">
+            <div class="statusbar">
+              <span>9:41</span>
+              <span>Wi-Fi 91%</span>
+            </div>
+            <div class="search-header">
+              <button class="icon-button" aria-label="返回"><svg><use href="#icon-back"></use></svg></button>
+              <label class="search-input">
+                <svg><use href="#icon-search"></use></svg>
+                <input value="cloud" aria-label="搜索" />
+              </label>
+            </div>
+            <nav class="segmented narrow">
+              <button class="active">全部</button>
+              <button>歌曲</button>
+              <button>专辑</button>
+              <button>文件夹</button>
+            </nav>
+            <section class="search-hints">
+              <div class="section-title">
+                <h4>最近搜索</h4>
+                <span>本机保存</span>
+              </div>
+              <div class="tag-row">
+                <button>flac</button>
+                <button>周寻</button>
+                <button>OST</button>
+                <button>/live</button>
+              </div>
+            </section>
+            <section class="content-block search-results">
+              <div class="section-title">
+                <h4>歌曲</h4>
+                <span>18 个结果</span>
+              </div>
+              <div class="song-row">
+                <div class="cover art-4 thumb"></div>
+                <div><strong>Private Cloud</strong><span>Northline · Synth</span></div>
+                <em>5:06</em>
+              </div>
+              <div class="song-row">
+                <div class="cover art-10 thumb"></div>
+                <div><strong>Cloudless Night</strong><span>Blue Room · WAV</span></div>
+                <em>4:25</em>
+              </div>
+            </section>
+            <section class="content-block search-results">
+              <div class="section-title">
+                <h4>专辑</h4>
+                <span>3 个结果</span>
+              </div>
+              <div class="album-result">
+                <div class="cover art-5 medium-cover"></div>
+                <div>
+                  <strong>Cloud Archive</strong>
+                  <span>Various Artists · 2024 · 28 首</span>
+                  <button>查看专辑</button>
+                </div>
+              </div>
+            </section>
+            <section class="empty-tip">
+              <svg><use href="#icon-storage"></use></svg>
+              <span>歌词搜索将在二期接入本地索引。</span>
+            </section>
+          </section>
+        </div>
+      </article>
+
+      <article class="mockup">
+        <h2>07 全屏播放器</h2>
+        <div class="phone">
+          <section class="screen player-screen dark-screen">
+            <div class="player-bg"></div>
+            <div class="statusbar statusbar-dark">
+              <span>9:41</span>
+              <span>Wi-Fi 89%</span>
+            </div>
+            <header class="player-header">
+              <button class="icon-button ghost" aria-label="返回"><svg><use href="#icon-back"></use></svg></button>
+              <div>
+                <span>来自 DiskStation-Home</span>
+                <strong>原始 FLAC</strong>
+              </div>
+              <button class="icon-button ghost" aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+            </header>
+            <div class="record-wrap is-playing">
+              <div class="record">
+                <div class="record-ring"></div>
+                <div class="cover art-1 record-cover"></div>
+              </div>
+            </div>
+            <section class="track-meta">
+              <div>
+                <h3>午夜电台</h3>
+                <p>陈以北</p>
+              </div>
+              <button class="heart-button is-loved" aria-label="已收藏"><svg><use href="#icon-heart"></use></svg></button>
+            </section>
+            <section class="lyric-lines">
+              <p>城市灯光慢慢沉入夜色</p>
+              <p class="active">我把旧唱片放回云端</p>
+              <p>让下一首从缓存里醒来</p>
+            </section>
+            <section class="progress-block">
+              <div class="progress-line"><span class="buffered"></span><strong></strong></div>
+              <div class="time-row"><span>02:18</span><span>04:36</span></div>
+            </section>
+            <section class="playback-controls">
+              <button aria-label="随机播放"><svg><use href="#icon-shuffle"></use></svg></button>
+              <button aria-label="上一首"><svg><use href="#icon-prev"></use></svg></button>
+              <button class="main-control" data-toggle-play aria-label="播放或暂停"><svg><use href="#icon-pause"></use></svg></button>
+              <button aria-label="下一首"><svg><use href="#icon-next"></use></svg></button>
+              <button aria-label="播放队列"><svg><use href="#icon-queue"></use></svg></button>
+            </section>
+            <footer class="player-tools">
+              <button><svg><use href="#icon-download"></use></svg><span>已缓存</span></button>
+              <button><svg><use href="#icon-cast"></use></svg><span>投放</span></button>
+              <button><svg><use href="#icon-sliders"></use></svg><span>均衡器</span></button>
+            </footer>
+          </section>
+        </div>
+      </article>
+
+      <article class="mockup">
+        <h2>08 播放队列</h2>
+        <div class="phone">
+          <section class="screen player-screen dark-screen">
+            <div class="player-bg muted"></div>
+            <div class="statusbar statusbar-dark">
+              <span>9:41</span>
+              <span>Wi-Fi 89%</span>
+            </div>
+            <header class="player-header">
+              <button class="icon-button ghost" aria-label="返回"><svg><use href="#icon-back"></use></svg></button>
+              <div>
+                <span>来自 DiskStation-Home</span>
+                <strong>原始 FLAC</strong>
+              </div>
+              <button class="icon-button ghost" aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+            </header>
+            <div class="record-wrap is-playing">
+              <div class="record">
+                <div class="record-ring"></div>
+                <div class="cover art-1 record-cover"></div>
+              </div>
+            </div>
+            <section class="track-meta">
+              <div>
+                <h3>午夜电台</h3>
+                <p>陈以北</p>
+              </div>
+              <button class="heart-button is-loved" aria-label="已收藏"><svg><use href="#icon-heart"></use></svg></button>
+            </section>
+            <section class="lyric-lines">
+              <p>城市灯光慢慢沉入夜色</p>
+              <p class="active">我把旧唱片放回云端</p>
+              <p>让下一首从缓存里醒来</p>
+            </section>
+            <section class="progress-block">
+              <div class="progress-line"><span class="buffered"></span><strong></strong></div>
+              <div class="time-row"><span>02:18</span><span>04:36</span></div>
+            </section>
+            <section class="playback-controls">
+              <button aria-label="随机播放"><svg><use href="#icon-shuffle"></use></svg></button>
+              <button aria-label="上一首"><svg><use href="#icon-prev"></use></svg></button>
+              <button class="main-control" data-toggle-play aria-label="播放或暂停"><svg><use href="#icon-pause"></use></svg></button>
+              <button aria-label="下一首"><svg><use href="#icon-next"></use></svg></button>
+              <button aria-label="播放队列"><svg><use href="#icon-queue"></use></svg></button>
+            </section>
+            <footer class="player-tools">
+              <button><svg><use href="#icon-download"></use></svg><span>已缓存</span></button>
+              <button><svg><use href="#icon-cast"></use></svg><span>投放</span></button>
+              <button><svg><use href="#icon-sliders"></use></svg><span>均衡器</span></button>
+            </footer>
+            <section class="queue-sheet">
+              <div class="sheet-handle"></div>
+              <div class="queue-title">
+                <div>
+                  <h3>播放队列</h3>
+                  <p>顺序播放 · 30 首</p>
+                </div>
+                <button>保存为歌单</button>
+              </div>
+              <div class="queue-actions">
+                <button><svg><use href="#icon-shuffle"></use></svg>随机</button>
+                <button><svg><use href="#icon-repeat"></use></svg>循环</button>
+                <button>清空</button>
+              </div>
+              <div class="queue-list">
+                <div class="queue-row current">
+                  <span class="drag"></span>
+                  <div><strong>午夜电台</strong><span>陈以北</span></div>
+                  <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+                </div>
+                <div class="queue-row">
+                  <span class="drag"></span>
+                  <div><strong>Riverside Tape</strong><span>Yun Duo</span></div>
+                  <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+                </div>
+                <div class="queue-row">
+                  <span class="drag"></span>
+                  <div><strong>山谷回声</strong><span>徐白</span></div>
+                  <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+                </div>
+                <div class="queue-row">
+                  <span class="drag"></span>
+                  <div><strong>Quiet Server</strong><span>Northline</span></div>
+                  <button aria-label="更多"><svg><use href="#icon-more"></use></svg></button>
+                </div>
+              </div>
+            </section>
+          </section>
+        </div>
+      </article>
+
+      <article class="mockup">
+        <h2>09 我的</h2>
+        <div class="phone">
+          <section class="screen me-screen">
+            <div class="statusbar">
+              <span>9:41</span>
+              <span>Wi-Fi 87%</span>
+            </div>
+            <header class="simple-header">
+              <div>
+                <h3>我的</h3>
+                <p>连接、安全、下载与播放偏好</p>
+              </div>
+              <button class="icon-button" aria-label="设置"><svg><use href="#icon-settings"></use></svg></button>
+            </header>
+            <section class="nas-status-panel">
+              <div class="nas-main">
+                <svg><use href="#icon-storage"></use></svg>
+                <div>
+                  <strong>DiskStation-Home</strong>
+                  <span>home-nas.example.com:5001</span>
+                </div>
+                <em>在线</em>
+              </div>
+              <div class="capacity">
+                <div><span style="width: 63%"></span></div>
+                <p>音乐库 1.8 TB · 缓存剩余 18.6 GB</p>
+              </div>
+            </section>
+            <section class="download-panel">
+              <div>
+                <strong>离线下载</strong>
+                <span>已下载 1,284 首 · 下载中 6 首</span>
+              </div>
+              <div class="ring-progress"><span>72%</span></div>
+            </section>
+            <section class="settings-list">
+              <div><svg><use href="#icon-sliders"></use></svg><span>播放设置</span><em>原始音质</em></div>
+              <div><svg><use href="#icon-wifi"></use></svg><span>仅 Wi-Fi 下载</span><button class="toggle is-on" aria-label="仅 Wi-Fi 下载已开启"><span></span></button></div>
+              <div><svg><use href="#icon-moon"></use></svg><span>外观设置</span><em>跟随系统</em></div>
+              <div><svg><use href="#icon-shield"></use></svg><span>安全设置</span><em>HTTPS 可信</em></div>
+            </section>
+            <section class="diagnostic-strip">
+              <svg><use href="#icon-check"></use></svg>
+              <div>
+                <strong>连接诊断正常</strong>
+                <span>DSM API 与 Audio Station 能力可用</span>
+              </div>
+            </section>
+            <div class="mini-player compact">
+              <div class="cover art-1 thumb"></div>
+              <div><strong>午夜电台</strong><span>正在播放</span></div>
+              <button data-toggle-play aria-label="播放或暂停"><svg><use href="#icon-pause"></use></svg></button>
+            </div>
+            <nav class="bottom-tabs">
+              <a><svg><use href="#icon-home"></use></svg><span>首页</span></a>
+              <a><svg><use href="#icon-library"></use></svg><span>音乐库</span></a>
+              <a><svg><use href="#icon-list-music"></use></svg><span>歌单</span></a>
+              <a class="active"><svg><use href="#icon-user"></use></svg><span>我的</span></a>
+            </nav>
+          </section>
+        </div>
+      </article>
+    </main>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

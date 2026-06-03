@@ -1,0 +1,235 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/zy_page">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:clipToPadding="false"
+        android:paddingBottom="154dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="我的"
+                        android:textColor="@color/zy_ink"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="5dp"
+                        android:text="连接、安全、下载与播放偏好"
+                        android:textColor="@color/zy_muted"
+                        android:textSize="13sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="38dp"
+                    android:layout_height="38dp"
+                    android:background="@drawable/bg_icon_white"
+                    android:gravity="center"
+                    android:text="⚙"
+                    android:textColor="@color/zy_ink"
+                    android:textSize="18sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_nas_status"
+                android:orientation="vertical"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="38dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:layout_width="38dp"
+                        android:layout_height="38dp"
+                        android:background="@drawable/bg_pill_primary_soft"
+                        android:gravity="center"
+                        android:text="▰"
+                        android:textColor="@color/zy_cyan"
+                        android:textSize="18sp" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView style="@style/ZySongTitle" android:text="DiskStation-Home" />
+                        <TextView style="@style/ZySongMeta" android:text="home-nas.example.com:5001" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="26dp"
+                        android:background="@drawable/bg_pill_success"
+                        android:gravity="center"
+                        android:paddingHorizontal="9dp"
+                        android:text="在线"
+                        android:textColor="#047857"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="7dp"
+                    android:layout_marginTop="16dp"
+                    android:background="@drawable/bg_progress_track_light"
+                    android:orientation="horizontal">
+
+                    <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="63" android:background="@drawable/bg_progress_primary" />
+                    <View android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="37" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="7dp"
+                    android:text="音乐库 1.8 TB · 缓存剩余 18.6 GB"
+                    android:textColor="@color/zy_muted"
+                    android:textSize="12sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="82dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_card"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="14dp">
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView style="@style/ZySongTitle" android:text="离线下载" android:textSize="15sp" />
+                    <TextView style="@style/ZySongMeta" android:text="已下载 1,284 首 · 下载中 6 首" />
+                </LinearLayout>
+
+                <TextView
+                    android:layout_width="54dp"
+                    android:layout_height="54dp"
+                    android:background="@drawable/bg_pill_primary_soft"
+                    android:gravity="center"
+                    android:text="72%"
+                    android:textColor="@color/zy_primary"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="vertical">
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="50dp" android:layout_marginBottom="8dp" android:background="@drawable/bg_card" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="12dp">
+                    <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="≡" android:textColor="@color/zy_primary" android:textSize="18sp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="播放设置" android:textColor="#374151" android:textSize="14sp" android:textStyle="bold" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="原始音质" android:textColor="#9CA3AF" android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="50dp" android:layout_marginBottom="8dp" android:background="@drawable/bg_card" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="12dp">
+                    <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="≋" android:textColor="@color/zy_primary" android:textSize="18sp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="仅 Wi-Fi 下载" android:textColor="#374151" android:textSize="14sp" android:textStyle="bold" />
+                    <FrameLayout
+                        android:id="@+id/wifi_download_toggle"
+                        android:layout_width="46dp"
+                        android:layout_height="28dp"
+                        android:background="@drawable/bg_wifi_switch_track_on"
+                        android:clickable="true"
+                        android:focusable="true">
+
+                        <View
+                            android:layout_width="20dp"
+                            android:layout_height="20dp"
+                            android:layout_gravity="end|center_vertical"
+                            android:layout_marginEnd="4dp"
+                            android:background="@drawable/bg_wifi_switch_thumb" />
+                    </FrameLayout>
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="50dp" android:layout_marginBottom="8dp" android:background="@drawable/bg_card" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="12dp">
+                    <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="◐" android:textColor="@color/zy_primary" android:textSize="18sp" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="外观设置" android:textColor="#374151" android:textSize="14sp" android:textStyle="bold" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="跟随系统" android:textColor="#9CA3AF" android:textSize="12sp" />
+                </LinearLayout>
+
+                <LinearLayout android:layout_width="match_parent" android:layout_height="50dp" android:background="@drawable/bg_card" android:gravity="center_vertical" android:orientation="horizontal" android:paddingHorizontal="12dp">
+                    <TextView android:layout_width="30dp" android:layout_height="match_parent" android:gravity="center" android:text="✓" android:textColor="@color/zy_primary" android:textSize="18sp" android:textStyle="bold" />
+                    <TextView android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="安全设置" android:textColor="#374151" android:textSize="14sp" android:textStyle="bold" />
+                    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="HTTPS 可信" android:textColor="#9CA3AF" android:textSize="12sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="64dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_diagnostic"
+                android:gravity="center_vertical"
+                android:orientation="horizontal"
+                android:padding="12dp">
+
+                <TextView
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:background="@drawable/bg_pill_success"
+                    android:gravity="center"
+                    android:text="✓"
+                    android:textColor="#065F46"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="10dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView style="@style/ZySongTitle" android:text="连接诊断正常" android:textColor="#065F46" />
+                    <TextView style="@style/ZySongMeta" android:text="DSM API 与 Audio Station 能力可用" android:textColor="#065F46" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <include layout="@layout/ui_component_mini_player" />
+    <include layout="@layout/ui_component_bottom_nav_me" />
+</FrameLayout>

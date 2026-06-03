@@ -1,0 +1,82 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1120" height="310" viewBox="0 0 1120 310">
+  <defs>
+    <style>
+      text { font-family: Inter, Arial, sans-serif; fill: #e5e7eb; }
+      .caption { fill: #94a3b8; font-size: 16px; }
+      .title { fill: #ffffff; font-size: 20px; font-weight: 700; }
+      .card { fill: #111827; }
+    </style>
+  </defs>
+  <rect width="1120" height="310" fill="#0f1020"/>
+  <text x="40" y="42" class="title">Ziyun Music launcher icon options</text>
+  <text x="40" y="68" class="caption">Dark player tone, purple brand axis, NAS/private-cloud cues, music playback cues.</text>
+
+  <g transform="translate(56 104)">
+    <rect width="144" height="144" rx="24" class="card"/>
+    <circle cx="72" cy="72" r="50" fill="#1f2336"/>
+    <circle cx="72" cy="72" r="44" fill="#ede9fe"/>
+    <circle cx="72" cy="72" r="29" fill="#7c3aed"/>
+    <path d="M60 48c15-9 38-1 42 18-14-12-35-9-46 5-8 10-9 20-8 26-10-21-5-39 12-49z" fill="#a78bfa" opacity=".36"/>
+    <path d="M65 56 90 72 65 88Z" fill="#fff"/>
+    <path d="M36 108h18c3-14 15-19 27-14 6-10 22-9 27 4 9 1 15 6 16 10h-20" fill="none" stroke="#06b6d4" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+    <text x="72" y="178" text-anchor="middle" class="title">01</text>
+    <text x="72" y="202" text-anchor="middle" class="caption">Record Cloud</text>
+  </g>
+
+  <g transform="translate(264 104)">
+    <rect width="144" height="144" rx="24" class="card"/>
+    <rect x="12" y="44" width="132" height="68" rx="16" fill="#1a1532"/>
+    <rect x="18" y="38" width="126" height="72" rx="16" fill="#2e1065"/>
+    <path d="M18 38h70v72H34a16 16 0 0 1-16-16z" fill="#7c3aed"/>
+    <path d="M88 38h18a16 16 0 0 1 16 16v40a16 16 0 0 1-16 16H88z" fill="#ec4899" opacity=".72"/>
+    <rect x="38" y="58" width="52" height="6" fill="#ede9fe"/>
+    <rect x="38" y="76" width="64" height="6" fill="#c4b5fd"/>
+    <rect x="38" y="94" width="40" height="6" fill="#06b6d4"/>
+    <path d="M97 58 118 72 97 86Z" fill="#fff"/>
+    <circle cx="106" cy="100" r="8" fill="#10b981"/>
+    <path d="M46 28c11-10 30-11 41-1" fill="none" stroke="#06b6d4" stroke-linecap="round" stroke-width="5"/>
+    <text x="72" y="178" text-anchor="middle" class="title">02</text>
+    <text x="72" y="202" text-anchor="middle" class="caption">NAS Deck</text>
+  </g>
+
+  <g transform="translate(472 104)">
+    <rect width="144" height="144" rx="24" fill="#111827"/>
+    <path d="M108 99H41C25 99 16 89 16 76c0-11 9-20 22-20 4-19 20-32 40-32 21 0 38 16 41 35 11 2 20 12 20 24 0 11-9 16-31 16z" fill="#2e1065"/>
+    <path d="M106 93H43c-11 0-18-7-18-16 0-10 8-16 18-15 5-17 20-28 37-28 19 0 33 14 35 31 10 0 18 7 18 17 0 8-8 11-27 11z" fill="#7c3aed" opacity=".84"/>
+    <rect x="46" y="67" width="8" height="24" fill="#c4b5fd"/>
+    <rect x="62" y="55" width="8" height="36" fill="#06b6d4"/>
+    <rect x="78" y="47" width="8" height="44" fill="#fff"/>
+    <rect x="94" y="61" width="8" height="30" fill="#ec4899"/>
+    <rect x="110" y="72" width="8" height="19" fill="#10b981"/>
+    <rect x="32" y="112" width="92" height="7" fill="#ede9fe"/>
+    <rect x="20" y="112" width="24" height="7" fill="#06b6d4"/>
+    <text x="72" y="178" text-anchor="middle" class="title">03</text>
+    <text x="72" y="202" text-anchor="middle" class="caption">Cloud EQ</text>
+  </g>
+
+  <g transform="translate(680 104)">
+    <rect width="144" height="144" rx="24" fill="#2e1065"/>
+    <path d="M84 0h36a24 24 0 0 1 24 24v96a24 24 0 0 1-24 24H66z" fill="#ec4899" opacity=".38"/>
+    <path d="M41 40h68v18H76l39 37v17H40V94h41L41 58z" fill="#ede9fe"/>
+    <path d="M76 58h33L70 94H40z" fill="#7c3aed" opacity=".62"/>
+    <path d="M36 117h24c3-10 12-14 22-9 5-8 17-7 21 3" fill="none" stroke="#06b6d4" stroke-linecap="round" stroke-linejoin="round" stroke-width="5"/>
+    <circle cx="108" cy="40" r="12" fill="#fff"/>
+    <rect x="106" y="34" width="4" height="24" fill="#06b6d4"/>
+    <text x="72" y="178" text-anchor="middle" class="title">04</text>
+    <text x="72" y="202" text-anchor="middle" class="caption">Z Mark</text>
+  </g>
+
+  <g transform="translate(888 104)">
+    <rect width="144" height="144" rx="24" class="card"/>
+    <path d="M24 82c22-43 71-52 103-23" fill="none" stroke="#7c3aed" stroke-linecap="round" stroke-width="8"/>
+    <path d="M30 100c30 24 76 16 100-34" fill="none" stroke="#06b6d4" stroke-linecap="round" stroke-width="7"/>
+    <circle cx="72" cy="72" r="36" fill="#ede9fe"/>
+    <circle cx="72" cy="72" r="21" fill="#7c3aed"/>
+    <path d="M66 62 84 72 66 82Z" fill="#fff"/>
+    <circle cx="119" cy="60" r="12" fill="#ec4899"/>
+    <circle cx="28" cy="102" r="12" fill="#10b981"/>
+    <rect x="104" y="110" width="24" height="7" fill="#06b6d4"/>
+    <text x="72" y="178" text-anchor="middle" class="title">05</text>
+    <text x="72" y="202" text-anchor="middle" class="caption">Sync Orbit</text>
+  </g>
+</svg>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="zy_space_xs">4dp</dimen>
+    <dimen name="zy_space_sm">8dp</dimen>
+    <dimen name="zy_space_md">12dp</dimen>
+    <dimen name="zy_space_lg">18dp</dimen>
+    <dimen name="zy_radius_sm">6dp</dimen>
+    <dimen name="zy_radius_md">8dp</dimen>
+    <dimen name="zy_radius_lg">10dp</dimen>
+    <dimen name="zy_bottom_nav_height">64dp</dimen>
+    <dimen name="zy_mini_player_height">58dp</dimen>
+</resources>

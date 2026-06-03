@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="80dp"
+    android:layout_marginEnd="9dp"
+    android:layout_weight="1"
+    android:background="@drawable/bg_card"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="8dp">
+
+    <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="▣" android:textColor="@color/zy_primary" android:textSize="20sp" />
+    <TextView style="@style/ZySongTitle" android:gravity="center" android:text="年份" android:textSize="12sp" />
+    <TextView style="@style/ZySongMeta" android:gravity="center" android:text="1998-2026" android:textSize="11sp" />
+</LinearLayout>

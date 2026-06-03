@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="0dp"
+    android:layout_height="match_parent"
+    android:layout_marginEnd="8dp"
+    android:layout_weight="1"
+    android:background="@drawable/bg_card"
+    android:gravity="center_vertical"
+    android:orientation="vertical"
+    android:paddingHorizontal="12dp"
+    android:paddingVertical="10dp">
+
+    <TextView style="@style/ZySongTitle" android:text="812" android:textColor="@color/zy_primary" android:textSize="21sp" />
+    <TextView style="@style/ZySongMeta" android:text="专辑" />
+</LinearLayout>

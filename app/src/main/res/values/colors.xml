@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="zy_primary">#7C3AED</color>
+    <color name="zy_primary_dark">#2E1065</color>
+    <color name="zy_primary_soft">#EDE9FE</color>
+    <color name="zy_lavender">#A78BFA</color>
+    <color name="zy_pink">#EC4899</color>
+    <color name="zy_cyan">#06B6D4</color>
+    <color name="zy_green">#10B981</color>
+    <color name="zy_amber">#F59E0B</color>
+    <color name="zy_ink">#111827</color>
+    <color name="zy_muted">#6B7280</color>
+    <color name="zy_line">#E5E7EB</color>
+    <color name="zy_page">#F9FAFB</color>
+    <color name="zy_soft_bg">#F8F5FF</color>
+    <color name="zy_dark">#0F1020</color>
+    <color name="zy_white">#FFFFFF</color>
+</resources>

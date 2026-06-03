@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="58dp"
+    android:layout_marginBottom="8dp"
+    android:background="@drawable/bg_card"
+    android:gravity="center_vertical"
+    android:orientation="horizontal"
+    android:padding="8dp">
+
+    <FrameLayout
+        android:layout_width="44dp"
+        android:layout_height="44dp"
+        android:background="@drawable/bg_cover_orange">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:gravity="bottom|end"
+            android:padding="6dp"
+            android:text="S"
+            android:textColor="#C7FFFFFF"
+            android:textSize="18sp"
+            android:textStyle="bold" />
+    </FrameLayout>
+
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="10dp"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <TextView style="@style/ZySongTitle" android:text="南方夜航" />
+        <TextView style="@style/ZySongMeta" android:text="徐白 · 2021" />
+    </LinearLayout>
+
+    <TextView
+        android:layout_width="42dp"
+        android:layout_height="wrap_content"
+        android:gravity="end|center_vertical"
+        android:text="4:12"
+        android:textColor="#9CA3AF"
+        android:textSize="12sp" />
+</LinearLayout>
