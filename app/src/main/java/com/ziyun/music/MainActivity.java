@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ziyun.music.data.MusicRepository;
+import com.ziyun.music.data.NasConnectionStore;
 import com.ziyun.music.model.Playlist;
 import com.ziyun.music.model.Song;
 import com.ziyun.music.network.NasClient;
@@ -54,6 +55,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private MusicRepository repository;
+    private NasConnectionStore connectionStore;
     private NasClient nasClient;
     private PlayerController player;
     private FrameLayout root;
@@ -66,6 +68,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         repository = new MusicRepository();
+        connectionStore = new NasConnectionStore(this);
         nasClient = new NasClient();
         player = new PlayerController(repository.songs());
         player.setListener(this);
@@ -165,6 +168,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     private void bindScreen(View page, Screen screen) {
         switch (screen) {
             case CONNECT:
+                prefillNasProfile(page);
                 click(page, R.id.back_button, () -> show(Screen.ME));
                 click(page, R.id.discovery_row, () -> applyDiscoveredNas(page));
                 click(page, R.id.connect_primary, () -> connectNas(page));
@@ -245,7 +249,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
                 click(page, R.id.wifi_download_toggle, () -> toast("仅 Wi-Fi 下载已开启"));
                 wireText(page, "外观设置", () -> toast("当前为跟随系统"));
                 wireText(page, "安全设置", () -> toast("HTTPS 可信"));
-                wireText(page, "连接诊断正常", () -> toast("DSM API 与 Audio Station 能力可用"));
+                wireText(page, "连接诊断正常", this::diagnoseNas);
                 break;
             case SPLASH:
             default:
@@ -276,13 +280,13 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     private NasSyncResult loginAndSyncSongs(String address, String account, String password, String otp) {
         NasClient.ConnectionResult connection = nasClient.connect(address, account, password, otp, true);
         if (!connection.success) {
-            return new NasSyncResult(connection, Collections.emptyList(), null);
+            return new NasSyncResult(connection, Collections.emptyList(), null, address, account);
         }
 
         try {
-            return new NasSyncResult(connection, nasClient.fetchSongs(), null);
+            return new NasSyncResult(connection, nasClient.fetchSongs(), null, address, account);
         } catch (Exception e) {
-            return new NasSyncResult(connection, Collections.emptyList(), e);
+            return new NasSyncResult(connection, Collections.emptyList(), e, address, account);
         }
     }
 
@@ -296,7 +300,9 @@ public class MainActivity extends Activity implements PlayerController.Listener 
             return;
         }
 
+        connectionStore.saveProfile(syncResult.address, syncResult.account);
         if (!syncResult.songs.isEmpty()) {
+            connectionStore.saveSyncStats(syncResult.songs.size());
             repository.replaceWithNasSongs(syncResult.songs);
             player.playQueue(repository.songs(), 0);
             show(Screen.HOME);
@@ -312,6 +318,14 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         }
     }
 
+    private void diagnoseNas() {
+        toast("正在检查 NAS 连接...");
+        networkExecutor.execute(() -> {
+            NasClient.DiagnosticResult result = nasClient.diagnose();
+            runOnUiThread(() -> toast(result.title + "：" + result.message));
+        });
+    }
+
     private void applyDiscoveredNas(View page) {
         List<NasClient.DiscoveredNas> devices = nasClient.discoverLocalDevices();
         if (devices.isEmpty()) {
@@ -323,6 +337,21 @@ public class MainActivity extends Activity implements PlayerController.Listener 
             NasClient.DiscoveredNas device = devices.get(0);
             fields.get(0).setText(device.address);
             toast("已填入 " + device.name);
+        }
+    }
+
+    private void prefillNasProfile(View page) {
+        NasConnectionStore.Profile profile = connectionStore.profile();
+        if (!profile.hasConnectionInfo()) {
+            return;
+        }
+
+        List<EditText> fields = collect(page, EditText.class);
+        if (fields.size() > 0) {
+            fields.get(0).setText(profile.address);
+        }
+        if (fields.size() > 1) {
+            fields.get(1).setText(profile.account);
         }
     }
 
@@ -798,11 +827,15 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         private final NasClient.ConnectionResult connection;
         private final List<Song> songs;
         private final Exception error;
+        private final String address;
+        private final String account;
 
-        private NasSyncResult(NasClient.ConnectionResult connection, List<Song> songs, Exception error) {
+        private NasSyncResult(NasClient.ConnectionResult connection, List<Song> songs, Exception error, String address, String account) {
             this.connection = connection;
             this.songs = songs == null ? Collections.emptyList() : songs;
             this.error = error;
+            this.address = address == null ? "" : address;
+            this.account = account == null ? "" : account;
         }
     }
 }
