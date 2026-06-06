@@ -12,28 +12,56 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.InterfaceAddress;
+import java.net.NetworkInterface;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
+import java.security.cert.X509Certificate;
 import java.util.ArrayList;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CompletionService;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
+import javax.net.ssl.HostnameVerifier;
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.X509TrustManager;
 
 public class NasClient {
     private static final int TIMEOUT_MS = 15000;
     private static final int SONG_PAGE_SIZE = 500;
     private static final int MAX_SONG_PAGES = 100;
+    private static final int DISCOVERY_CONNECT_TIMEOUT_MS = 450;
+    private static final int DISCOVERY_READ_TIMEOUT_MS = 700;
+    private static final int DISCOVERY_MAX_WAIT_MS = 6500;
+    private static final int DISCOVERY_THREADS = 32;
 
     private static final String API_AUTH = "SYNO.API.Auth";
     private static final String API_SONG = "SYNO.AudioStation.Song";
     private static final String API_STREAM = "SYNO.AudioStation.Stream";
 
     private final Map<String, ApiSpec> apiSpecs = new HashMap<>();
+    private final HostnameVerifier discoveryHostnameVerifier = (hostname, session) -> true;
 
     private String baseUrl;
     private String sid;
+    private boolean relaxedHttpsForSession;
+    private SSLContext discoverySslContext;
 
     public static class DiscoveredNas {
         public final String name;
@@ -72,7 +100,156 @@ public class NasClient {
     }
 
     public List<DiscoveredNas> discoverLocalDevices() {
-        return new ArrayList<>();
+        List<String> hosts = localSubnetHosts();
+        if (hosts.isEmpty()) {
+            return new ArrayList<>();
+        }
+
+        ExecutorService executor = Executors.newFixedThreadPool(Math.min(DISCOVERY_THREADS, hosts.size() * 2));
+        CompletionService<DiscoveredNasCandidate> completion = new ExecutorCompletionService<>(executor);
+        int taskCount = 0;
+        for (String host : hosts) {
+            completion.submit(() -> probeNas(host, 5000));
+            completion.submit(() -> probeNas(host, 5001));
+            taskCount += 2;
+        }
+
+        Map<String, DiscoveredNas> found = new LinkedHashMap<>();
+        long deadline = System.currentTimeMillis() + DISCOVERY_MAX_WAIT_MS;
+        try {
+            for (int i = 0; i < taskCount; i++) {
+                long remaining = deadline - System.currentTimeMillis();
+                if (remaining <= 0) {
+                    break;
+                }
+
+                Future<DiscoveredNasCandidate> future = completion.poll(remaining, TimeUnit.MILLISECONDS);
+                if (future == null) {
+                    break;
+                }
+
+                DiscoveredNasCandidate candidate = future.get();
+                if (candidate == null) {
+                    continue;
+                }
+
+                DiscoveredNas existing = found.get(candidate.host);
+                if (existing == null || candidate.nas.address.startsWith("https://")) {
+                    found.put(candidate.host, candidate.nas);
+                }
+            }
+        } catch (Exception ignored) {
+            // Discovery should never block manual login. Partial results are still useful.
+        } finally {
+            executor.shutdownNow();
+        }
+
+        return new ArrayList<>(found.values());
+    }
+
+    private DiscoveredNasCandidate probeNas(String host, int port) {
+        String scheme = port == 5001 ? "https" : "http";
+        String address = scheme + "://" + host + ":" + port;
+        String query = "/webapi/query.cgi?api=SYNO.API.Info&version=1&method=query&query="
+                + enc(API_AUTH + "," + API_SONG + "," + API_STREAM);
+
+        try {
+            JSONObject json = getJson(address, query, DISCOVERY_CONNECT_TIMEOUT_MS, DISCOVERY_READ_TIMEOUT_MS, true);
+            if (!json.optBoolean("success", false)) {
+                return null;
+            }
+
+            JSONObject data = json.optJSONObject("data");
+            if (data == null || data.optJSONObject(API_AUTH) == null) {
+                return null;
+            }
+
+            boolean audioAvailable = data.optJSONObject(API_SONG) != null && data.optJSONObject(API_STREAM) != null;
+            String capability = audioAvailable ? "Audio Station 可用" : "DSM API 可用";
+            String name = firstNonEmpty(fetchNasName(address), "", "Synology NAS " + host);
+            return new DiscoveredNasCandidate(host, new DiscoveredNas(name, address, capability));
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String fetchNasName(String address) {
+        try {
+            JSONObject json = getJson(address, "/webman/info.cgi", DISCOVERY_CONNECT_TIMEOUT_MS, DISCOVERY_READ_TIMEOUT_MS, true);
+            JSONObject data = json.optJSONObject("data");
+            if (data == null) {
+                return "";
+            }
+
+            return firstNonEmpty(
+                    data.optString("hostname"),
+                    data.optString("server"),
+                    data.optString("model")
+            );
+        } catch (Exception ignored) {
+            return "";
+        }
+    }
+
+    private List<String> localSubnetHosts() {
+        Set<String> hosts = new LinkedHashSet<>();
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces != null && interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                if (!networkInterface.isUp() || networkInterface.isLoopback()) {
+                    continue;
+                }
+
+                for (InterfaceAddress interfaceAddress : networkInterface.getInterfaceAddresses()) {
+                    InetAddress address = interfaceAddress.getAddress();
+                    if (!(address instanceof Inet4Address) || address.isLoopbackAddress() || address.isLinkLocalAddress()) {
+                        continue;
+                    }
+
+                    addSubnetHosts(hosts, (Inet4Address) address, interfaceAddress.getNetworkPrefixLength());
+                }
+            }
+        } catch (Exception ignored) {
+            return new ArrayList<>();
+        }
+
+        return new ArrayList<>(hosts);
+    }
+
+    private void addSubnetHosts(Set<String> hosts, Inet4Address localAddress, short prefixLength) {
+        int prefix = prefixLength;
+        if (prefix < 24 || prefix > 30) {
+            prefix = 24;
+        }
+
+        int local = ipv4ToInt(localAddress.getAddress());
+        int mask = prefix == 0 ? 0 : (int) (0xffffffffL << (32 - prefix));
+        int network = local & mask;
+        int broadcast = network | ~mask;
+
+        int added = 0;
+        for (int value = network + 1; value < broadcast && added < 254; value++) {
+            if (value == local) {
+                continue;
+            }
+            hosts.add(intToIpv4(value));
+            added++;
+        }
+    }
+
+    private int ipv4ToInt(byte[] bytes) {
+        return ((bytes[0] & 0xff) << 24)
+                | ((bytes[1] & 0xff) << 16)
+                | ((bytes[2] & 0xff) << 8)
+                | (bytes[3] & 0xff);
+    }
+
+    private String intToIpv4(int value) {
+        return ((value >> 24) & 0xff) + "."
+                + ((value >> 16) & 0xff) + "."
+                + ((value >> 8) & 0xff) + "."
+                + (value & 0xff);
     }
 
     public ConnectionResult connect(String address, String account, String password, String otp, boolean verifyCertificate) {
@@ -83,52 +260,85 @@ public class NasClient {
             return new ConnectionResult(false, "账号信息不完整", "请输入 NAS 账号和密码。");
         }
 
-        try {
-            baseUrl = normalizeBaseUrl(address);
-            sid = null;
-            apiSpecs.clear();
+        ConnectionResult lastResult = null;
+        Exception lastException = null;
+        for (ConnectionTarget target : connectionTargets(address, verifyCertificate)) {
+            try {
+                baseUrl = target.url;
+                sid = null;
+                relaxedHttpsForSession = target.relaxedHttps;
+                apiSpecs.clear();
 
-            discoverApis();
-            if (!hasAudioStationApis()) {
-                return new ConnectionResult(false, "Audio Station 不可用", "DSM 未返回歌曲或播放流 API，请确认已安装并启用 Audio Station。");
+                ConnectionResult result = connectCurrentTarget(account, password, otp);
+                if (result.success || isCredentialOrPermissionFailure(result)) {
+                    return result;
+                }
+                lastResult = result;
+            } catch (Exception e) {
+                sid = null;
+                lastException = e;
             }
-
-            ApiSpec auth = api(API_AUTH, "auth.cgi", 6);
-            StringBuilder path = new StringBuilder("/webapi/")
-                    .append(auth.path)
-                    .append("?api=").append(enc(API_AUTH))
-                    .append("&version=").append(auth.version(6))
-                    .append("&method=login")
-                    .append("&account=").append(enc(account.trim()))
-                    .append("&passwd=").append(enc(password))
-                    .append("&session=AudioStation")
-                    .append("&format=sid");
-
-            if (otp != null && !otp.trim().isEmpty()) {
-                path.append("&otp_code=").append(enc(otp.trim()));
-            }
-
-            JSONObject json = getJson(path.toString());
-            if (!json.optBoolean("success", false)) {
-                return new ConnectionResult(false, "登录失败", authErrorMessage(json));
-            }
-
-            JSONObject data = json.optJSONObject("data");
-            sid = data == null ? null : data.optString("sid", "");
-            if (sid == null || sid.isEmpty()) {
-                return new ConnectionResult(false, "登录失败", "DSM 未返回有效会话，请检查账号权限。");
-            }
-
-            String protocol = baseUrl.startsWith("https://") ? "HTTPS" : "HTTP";
-            return new ConnectionResult(true, "NAS 登录成功", protocol + " 会话已建立，Audio Station API 可用。");
-        } catch (Exception e) {
-            sid = null;
-            return new ConnectionResult(false, "连接失败", readableError(e));
         }
+
+        sid = null;
+        relaxedHttpsForSession = false;
+        if (lastResult != null) {
+            return lastResult;
+        }
+        return new ConnectionResult(false, "连接失败", readableError(lastException));
+    }
+
+    private ConnectionResult connectCurrentTarget(String account, String password, String otp) throws Exception {
+        discoverApis();
+        if (!hasAudioStationApis()) {
+            return new ConnectionResult(false, "Audio Station 不可用", "DSM 未返回歌曲或播放流 API，请确认已安装并启用 Audio Station。");
+        }
+
+        ApiSpec auth = api(API_AUTH, "auth.cgi", 6);
+        StringBuilder path = new StringBuilder("/webapi/")
+                .append(auth.path)
+                .append("?api=").append(enc(API_AUTH))
+                .append("&version=").append(auth.version(6))
+                .append("&method=login")
+                .append("&account=").append(enc(account.trim()))
+                .append("&passwd=").append(enc(password))
+                .append("&session=AudioStation")
+                .append("&format=sid");
+
+        if (otp != null && !otp.trim().isEmpty()) {
+            path.append("&otp_code=").append(enc(otp.trim()));
+        }
+
+        JSONObject json = getJson(path.toString());
+        if (!json.optBoolean("success", false)) {
+            return new ConnectionResult(false, "登录失败", authErrorMessage(json));
+        }
+
+        JSONObject data = json.optJSONObject("data");
+        sid = data == null ? null : data.optString("sid", "");
+        if (sid == null || sid.isEmpty()) {
+            return new ConnectionResult(false, "登录失败", "DSM 未返回有效会话，请检查账号权限。");
+        }
+
+        String protocol = baseUrl.startsWith("https://") ? "HTTPS" : "HTTP";
+        String trustText = relaxedHttpsForSession ? "，局域网自签证书已接受" : "";
+        return new ConnectionResult(true, "NAS 登录成功", protocol + " 会话已建立" + trustText + "，Audio Station API 可用。");
+    }
+
+    private boolean isCredentialOrPermissionFailure(ConnectionResult result) {
+        return result != null && ("登录失败".equals(result.title) || "Audio Station 不可用".equals(result.title));
     }
 
     public boolean isConnected() {
         return baseUrl != null && sid != null && !sid.isEmpty();
+    }
+
+    public void configureBaseUrl(String address) {
+        if (address == null || address.trim().isEmpty()) {
+            return;
+        }
+        baseUrl = normalizeBaseUrl(address);
+        relaxedHttpsForSession = false;
     }
 
     public DiagnosticResult diagnose() {
@@ -340,11 +550,20 @@ public class NasClient {
     }
 
     private JSONObject getJson(String path) throws Exception {
+        return getJson(baseUrl, path, TIMEOUT_MS, TIMEOUT_MS, relaxedHttpsForSession);
+    }
+
+    private JSONObject getJson(String requestBaseUrl, String path, int connectTimeoutMs, int readTimeoutMs, boolean relaxedHttps) throws Exception {
         HttpURLConnection connection = null;
         try {
-            connection = (HttpURLConnection) new URL(baseUrl + path).openConnection();
-            connection.setConnectTimeout(TIMEOUT_MS);
-            connection.setReadTimeout(TIMEOUT_MS);
+            connection = (HttpURLConnection) new URL(requestBaseUrl + path).openConnection();
+            if (relaxedHttps && connection instanceof HttpsURLConnection) {
+                HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+                httpsConnection.setSSLSocketFactory(discoverySslContext().getSocketFactory());
+                httpsConnection.setHostnameVerifier(discoveryHostnameVerifier);
+            }
+            connection.setConnectTimeout(connectTimeoutMs);
+            connection.setReadTimeout(readTimeoutMs);
             connection.setRequestMethod("GET");
             connection.setRequestProperty("Accept", "application/json");
 
@@ -364,6 +583,32 @@ public class NasClient {
         }
     }
 
+    private SSLContext discoverySslContext() throws Exception {
+        if (discoverySslContext != null) {
+            return discoverySslContext;
+        }
+
+        X509TrustManager trustManager = new X509TrustManager() {
+            @Override
+            public void checkClientTrusted(X509Certificate[] chain, String authType) {
+            }
+
+            @Override
+            public void checkServerTrusted(X509Certificate[] chain, String authType) {
+            }
+
+            @Override
+            public X509Certificate[] getAcceptedIssuers() {
+                return new X509Certificate[0];
+            }
+        };
+
+        SSLContext context = SSLContext.getInstance("TLS");
+        context.init(null, new X509TrustManager[]{trustManager}, new SecureRandom());
+        discoverySslContext = context;
+        return discoverySslContext;
+    }
+
     private String readAll(InputStream stream) throws Exception {
         if (stream == null) {
             return "";
@@ -381,13 +626,100 @@ public class NasClient {
 
     private String normalizeBaseUrl(String address) {
         String value = address.trim();
+        boolean userSuppliedScheme = value.startsWith("http://") || value.startsWith("https://");
         if (!value.startsWith("http://") && !value.startsWith("https://")) {
             value = "https://" + value;
         }
         while (value.endsWith("/")) {
             value = value.substring(0, value.length() - 1);
         }
+        if (!hasExplicitPort(value) && shouldUseDsmDefaultPort(value, userSuppliedScheme)) {
+            value = value + (value.startsWith("https://") ? ":5001" : ":5000");
+        }
         return value;
+    }
+
+    private List<ConnectionTarget> connectionTargets(String address, boolean verifyCertificate) {
+        List<ConnectionTarget> targets = new ArrayList<>();
+        String raw = address == null ? "" : address.trim();
+        boolean hasScheme = raw.startsWith("http://") || raw.startsWith("https://");
+
+        if (hasScheme) {
+            String normalized = normalizeBaseUrl(raw);
+            addTarget(targets, normalized, false);
+            if (verifyCertificate && normalized.startsWith("https://") && isLocalAddressUrl(normalized)) {
+                addTarget(targets, normalized, true);
+            }
+            return targets;
+        }
+
+        if (raw.endsWith(":5000")) {
+            addTarget(targets, "http://" + raw, false);
+            return targets;
+        }
+
+        if (raw.endsWith(":5001")) {
+            String https = "https://" + raw;
+            addTarget(targets, https, false);
+            addTarget(targets, https, true);
+            return targets;
+        }
+
+        String https = normalizeBaseUrl(raw);
+        addTarget(targets, https, false);
+        addTarget(targets, https, true);
+        if (!hasRawPort(raw)) {
+            addTarget(targets, "http://" + raw + ":5000", false);
+        }
+        return targets;
+    }
+
+    private void addTarget(List<ConnectionTarget> targets, String url, boolean relaxedHttps) {
+        for (ConnectionTarget target : targets) {
+            if (target.url.equals(url) && target.relaxedHttps == relaxedHttps) {
+                return;
+            }
+        }
+        targets.add(new ConnectionTarget(url, relaxedHttps));
+    }
+
+    private boolean isLocalAddressUrl(String value) {
+        try {
+            String host = new URL(value).getHost();
+            return host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")
+                    || host.endsWith(".local")
+                    || host.equalsIgnoreCase("diskstation")
+                    || host.equalsIgnoreCase("synology");
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean hasRawPort(String value) {
+        return value != null && value.matches("[^/]+:\\d+");
+    }
+
+    private boolean hasExplicitPort(String value) {
+        try {
+            return new URL(value).getPort() >= 0;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    private boolean shouldUseDsmDefaultPort(String value, boolean userSuppliedScheme) {
+        if (!userSuppliedScheme) {
+            return true;
+        }
+        try {
+            String host = new URL(value).getHost();
+            return host.matches("\\d+\\.\\d+\\.\\d+\\.\\d+")
+                    || host.endsWith(".local")
+                    || host.equalsIgnoreCase("diskstation")
+                    || host.equalsIgnoreCase("synology");
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private void ensureConnected() {
@@ -473,6 +805,9 @@ public class NasClient {
     }
 
     private String readableError(Exception e) {
+        if (e == null) {
+            return "请检查 NAS 地址、端口和网络连接。";
+        }
         String message = e.getMessage();
         if (message == null || message.trim().isEmpty()) {
             return e.getClass().getSimpleName();
@@ -493,6 +828,26 @@ public class NasClient {
 
         private int version(int preferred) {
             return Math.max(minVersion, Math.min(preferred, maxVersion));
+        }
+    }
+
+    private static final class DiscoveredNasCandidate {
+        private final String host;
+        private final DiscoveredNas nas;
+
+        private DiscoveredNasCandidate(String host, DiscoveredNas nas) {
+            this.host = host;
+            this.nas = nas;
+        }
+    }
+
+    private static final class ConnectionTarget {
+        private final String url;
+        private final boolean relaxedHttps;
+
+        private ConnectionTarget(String url, boolean relaxedHttps) {
+            this.url = url;
+            this.relaxedHttps = relaxedHttps;
         }
     }
 }

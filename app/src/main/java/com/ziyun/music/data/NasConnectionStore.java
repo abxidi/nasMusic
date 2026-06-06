@@ -63,5 +63,9 @@ public class NasConnectionStore {
         public boolean hasConnectionInfo() {
             return !address.isEmpty() || !account.isEmpty();
         }
+
+        public boolean hasSyncedLibrary() {
+            return lastSyncCount > 0;
+        }
     }
 }

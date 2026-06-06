@@ -114,9 +114,9 @@
         </LinearLayout>
 
         <TextView style="@style/ZyFieldLabel" android:text="NAS 地址" />
-        <EditText style="@style/ZyInput" android:text="https://home-nas.example.com:5001" />
+        <EditText style="@style/ZyInput" android:hint="例如 192.168.1.10:5001 或 https://nas.home:5001" />
         <TextView style="@style/ZyFieldLabel" android:text="账号" />
-        <EditText style="@style/ZyInput" android:text="music_user" />
+        <EditText style="@style/ZyInput" android:hint="请输入 NAS 账号" />
         <TextView style="@style/ZyFieldLabel" android:text="密码" />
         <EditText style="@style/ZyInput" android:hint="请输入密码" android:inputType="textPassword" />
         <TextView style="@style/ZyFieldLabel" android:text="两步验证码" />

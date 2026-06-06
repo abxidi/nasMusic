@@ -21,6 +21,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.ziyun.music.data.MusicRepository;
+import com.ziyun.music.data.MusicLibraryStore;
 import com.ziyun.music.data.NasConnectionStore;
 import com.ziyun.music.model.Playlist;
 import com.ziyun.music.model.Song;
@@ -30,7 +31,10 @@ import com.ziyun.music.ui.RecordView;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -55,6 +59,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     private final Handler handler = new Handler(Looper.getMainLooper());
 
     private MusicRepository repository;
+    private MusicLibraryStore libraryStore;
     private NasConnectionStore connectionStore;
     private NasClient nasClient;
     private PlayerController player;
@@ -63,12 +68,19 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     private Screen lastMainScreen = Screen.HOME;
     private Runnable splashTask;
     private boolean nasConnectInProgress;
+    private List<NasClient.DiscoveredNas> discoveredNasDevices = Collections.emptyList();
+    private int nasDiscoveryGeneration;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         repository = new MusicRepository();
+        libraryStore = new MusicLibraryStore(this);
         connectionStore = new NasConnectionStore(this);
+        List<Song> savedSongs = libraryStore.loadSongs();
+        if (!savedSongs.isEmpty()) {
+            repository.replaceWithNasSongs(savedSongs);
+        }
         nasClient = new NasClient();
         player = new PlayerController(repository.songs());
         player.setListener(this);
@@ -82,7 +94,8 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     }
 
     private Screen firstScreenAfterSplash() {
-        return nasClient.isConnected() ? Screen.HOME : Screen.CONNECT;
+        NasConnectionStore.Profile profile = connectionStore.profile();
+        return nasClient.isConnected() || profile.hasSyncedLibrary() ? Screen.HOME : Screen.CONNECT;
     }
 
     @Override
@@ -172,7 +185,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     private void bindScreen(View page, Screen screen) {
         switch (screen) {
             case CONNECT:
-                bindDiscoveredNas(page);
+                startNasDiscovery(page);
                 prefillNasProfile(page);
                 click(page, R.id.back_button, () -> show(Screen.ME));
                 click(page, R.id.discovery_row, () -> applyDiscoveredNas(page));
@@ -183,6 +196,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
                 });
                 break;
             case HOME:
+                bindConnectionSummary(page);
                 click(page, R.id.home_search_button, () -> show(Screen.SEARCH));
                 click(page, R.id.home_search_entry, () -> show(Screen.SEARCH));
                 bindSong(page, "Lake Lights", false);
@@ -249,12 +263,13 @@ public class MainActivity extends Activity implements PlayerController.Listener 
                 break;
             case ME:
                 wireText(page, "DiskStation-Home", () -> show(Screen.CONNECT));
+                wireText(page, "连接诊断正常", this::diagnoseNas);
+                bindConnectionSummary(page);
                 wireText(page, "播放设置", () -> toast("当前为原始音质播放"));
                 wireText(page, "仅 Wi-Fi 下载", () -> toast("仅 Wi-Fi 下载已开启"));
                 click(page, R.id.wifi_download_toggle, () -> toast("仅 Wi-Fi 下载已开启"));
                 wireText(page, "外观设置", () -> toast("当前为跟随系统"));
                 wireText(page, "安全设置", () -> toast("HTTPS 可信"));
-                wireText(page, "连接诊断正常", this::diagnoseNas);
                 break;
             case SPLASH:
             default:
@@ -309,6 +324,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         if (!syncResult.songs.isEmpty()) {
             connectionStore.saveSyncStats(syncResult.songs.size());
             repository.replaceWithNasSongs(syncResult.songs);
+            libraryStore.saveSongs(syncResult.songs);
             player.playQueue(repository.songs(), 0);
             show(Screen.HOME);
             toast("NAS 登录成功，已同步 " + syncResult.songs.size() + " 首歌曲");
@@ -325,6 +341,10 @@ public class MainActivity extends Activity implements PlayerController.Listener 
 
     private void diagnoseNas() {
         toast("正在检查 NAS 连接...");
+        NasConnectionStore.Profile profile = connectionStore.profile();
+        if (!nasClient.isConnected() && !profile.address.isEmpty()) {
+            nasClient.configureBaseUrl(profile.address);
+        }
         networkExecutor.execute(() -> {
             NasClient.DiagnosticResult result = nasClient.diagnose();
             runOnUiThread(() -> toast(result.title + "：" + result.message));
@@ -332,7 +352,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     }
 
     private void applyDiscoveredNas(View page) {
-        List<NasClient.DiscoveredNas> devices = nasClient.discoverLocalDevices();
+        List<NasClient.DiscoveredNas> devices = discoveredNasDevices;
         if (devices.isEmpty()) {
             toast("未发现局域网 NAS");
             return;
@@ -345,31 +365,56 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         }
     }
 
-    private void bindDiscoveredNas(View page) {
+    private void startNasDiscovery(View page) {
+        int generation = ++nasDiscoveryGeneration;
+        discoveredNasDevices = Collections.emptyList();
+        showDiscoveryStatus(page, "正在扫描局域网 NAS", "检测同网段 DSM 5000/5001 端口", "扫描中", true);
+
+        networkExecutor.execute(() -> {
+            List<NasClient.DiscoveredNas> devices = nasClient.discoverLocalDevices();
+            runOnUiThread(() -> {
+                if (generation != nasDiscoveryGeneration || currentScreen != Screen.CONNECT) {
+                    return;
+                }
+                discoveredNasDevices = devices;
+                bindDiscoveredNas(page, devices);
+            });
+        });
+    }
+
+    private void bindDiscoveredNas(View page, List<NasClient.DiscoveredNas> devices) {
         View row = page.findViewById(R.id.discovery_row);
         if (row == null) {
             return;
         }
 
-        List<NasClient.DiscoveredNas> devices = nasClient.discoverLocalDevices();
         if (devices.isEmpty()) {
-            row.setVisibility(View.GONE);
+            showDiscoveryStatus(page, "未发现局域网 NAS", "请确认手机与 NAS 在同一局域网，或手动输入地址", "手动输入", true);
             return;
         }
 
         NasClient.DiscoveredNas device = devices.get(0);
-        row.setVisibility(View.VISIBLE);
+        showDiscoveryStatus(page, device.name, device.address + " · " + device.capability, "已发现", true);
+    }
+
+    private void showDiscoveryStatus(View page, String titleText, String subtitleText, String statusText, boolean visible) {
+        View row = page.findViewById(R.id.discovery_row);
+        if (row == null) {
+            return;
+        }
+
+        row.setVisibility(visible ? View.VISIBLE : View.GONE);
         TextView title = page.findViewById(R.id.discovery_title);
         TextView subtitle = page.findViewById(R.id.discovery_subtitle);
         TextView status = page.findViewById(R.id.discovery_status);
         if (title != null) {
-            title.setText(device.name);
+            title.setText(titleText);
         }
         if (subtitle != null) {
-            subtitle.setText(device.address + " · " + device.capability);
+            subtitle.setText(subtitleText);
         }
         if (status != null) {
-            status.setText("已发现");
+            status.setText(statusText);
         }
     }
 
@@ -386,6 +431,39 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         if (fields.size() > 1) {
             fields.get(1).setText(profile.account);
         }
+    }
+
+    private void bindConnectionSummary(View page) {
+        NasConnectionStore.Profile profile = connectionStore.profile();
+        String nasName = profile.address.isEmpty() ? "未连接 NAS" : displayNasName(profile.address);
+        String nasAddress = profile.address.isEmpty() ? "请连接 Synology NAS" : profile.address;
+        String syncText = profile.hasSyncedLibrary()
+                ? profile.lastSyncCount + " 首 · " + formatSyncTime(profile.lastSyncTime)
+                : "等待首次同步";
+        String statusText = nasClient.isConnected() ? "内网在线 · Audio Station" : "离线模式 · 本地索引";
+
+        replaceText(page, "DiskStation-Home", nasName);
+        replaceText(page, "home-nas.example.com:5001", nasAddress);
+        replaceText(page, "内网在线 · FLAC 原始播放", statusText);
+        replaceText(page, "DSM API 与 Audio Station 能力可用", syncText);
+        replaceText(page, "连接诊断正常", nasClient.isConnected() ? "连接诊断正常" : "运行连接诊断");
+    }
+
+    private String displayNasName(String address) {
+        String value = address == null ? "" : address.trim();
+        value = value.replace("https://", "").replace("http://", "");
+        int slash = value.indexOf('/');
+        if (slash >= 0) {
+            value = value.substring(0, slash);
+        }
+        return value.isEmpty() ? "Synology NAS" : value;
+    }
+
+    private String formatSyncTime(long timestamp) {
+        if (timestamp <= 0L) {
+            return "未同步";
+        }
+        return "同步于 " + new SimpleDateFormat("MM-dd HH:mm", Locale.CHINA).format(new Date(timestamp));
     }
 
     private void setConnectButtonEnabled(View page, boolean enabled) {
@@ -597,6 +675,14 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         TextView view = rootView.findViewById(id);
         if (view != null) {
             view.setText(value);
+        }
+    }
+
+    private void replaceText(View rootView, String oldValue, String newValue) {
+        for (TextView view : collect(rootView, TextView.class)) {
+            if (oldValue.contentEquals(view.getText())) {
+                view.setText(newValue);
+            }
         }
     }
 
