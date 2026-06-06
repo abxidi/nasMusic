@@ -77,8 +77,12 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         setContentView(root);
         show(Screen.SPLASH);
 
-        splashTask = () -> show(Screen.HOME);
+        splashTask = () -> show(firstScreenAfterSplash());
         handler.postDelayed(splashTask, 900);
+    }
+
+    private Screen firstScreenAfterSplash() {
+        return nasClient.isConnected() ? Screen.HOME : Screen.CONNECT;
     }
 
     @Override
