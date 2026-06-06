@@ -172,6 +172,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     private void bindScreen(View page, Screen screen) {
         switch (screen) {
             case CONNECT:
+                bindDiscoveredNas(page);
                 prefillNasProfile(page);
                 click(page, R.id.back_button, () -> show(Screen.ME));
                 click(page, R.id.discovery_row, () -> applyDiscoveredNas(page));
@@ -341,6 +342,34 @@ public class MainActivity extends Activity implements PlayerController.Listener 
             NasClient.DiscoveredNas device = devices.get(0);
             fields.get(0).setText(device.address);
             toast("已填入 " + device.name);
+        }
+    }
+
+    private void bindDiscoveredNas(View page) {
+        View row = page.findViewById(R.id.discovery_row);
+        if (row == null) {
+            return;
+        }
+
+        List<NasClient.DiscoveredNas> devices = nasClient.discoverLocalDevices();
+        if (devices.isEmpty()) {
+            row.setVisibility(View.GONE);
+            return;
+        }
+
+        NasClient.DiscoveredNas device = devices.get(0);
+        row.setVisibility(View.VISIBLE);
+        TextView title = page.findViewById(R.id.discovery_title);
+        TextView subtitle = page.findViewById(R.id.discovery_subtitle);
+        TextView status = page.findViewById(R.id.discovery_status);
+        if (title != null) {
+            title.setText(device.name);
+        }
+        if (subtitle != null) {
+            subtitle.setText(device.address + " · " + device.capability);
+        }
+        if (status != null) {
+            status.setText("已发现");
         }
     }
 

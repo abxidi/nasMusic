@@ -72,9 +72,7 @@ public class NasClient {
     }
 
     public List<DiscoveredNas> discoverLocalDevices() {
-        List<DiscoveredNas> devices = new ArrayList<>();
-        devices.add(new DiscoveredNas("DiskStation-Home", "http://192.168.31.8:5000", "Audio 可用"));
-        return devices;
+        return new ArrayList<>();
     }
 
     public ConnectionResult connect(String address, String account, String password, String otp, boolean verifyCertificate) {
