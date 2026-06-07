@@ -14,9 +14,11 @@ import java.util.List;
 public class PlayerController {
     public interface Listener {
         void onPlaybackChanged();
+        void onPlaybackError(String message);
     }
 
     private final Handler handler = new Handler(Looper.getMainLooper());
+    private final StreamProxy streamProxy = new StreamProxy();
     private final Runnable ticker = new Runnable() {
         @Override
         public void run() {
@@ -60,6 +62,7 @@ public class PlayerController {
     public void release() {
         handler.removeCallbacks(ticker);
         releaseStream();
+        streamProxy.close();
         listener = null;
     }
 
@@ -77,6 +80,19 @@ public class PlayerController {
 
     public int positionSec() {
         return positionSec;
+    }
+
+    public int durationSec() {
+        if (mediaPlayer != null && streamPrepared) {
+            try {
+                int durationMs = mediaPlayer.getDuration();
+                if (durationMs > 0) {
+                    return durationMs / 1000;
+                }
+            } catch (IllegalStateException ignored) {
+            }
+        }
+        return currentSong == null ? 0 : Math.max(0, currentSong.durationSec);
     }
 
     public boolean isPlaying() {
@@ -133,6 +149,12 @@ public class PlayerController {
                 playing = true;
                 startStreamIfReady();
             }
+            notifyChanged();
+            return;
+        }
+        if (currentSong != null) {
+            playing = false;
+            notifyError("当前歌曲没有可播放音频流，请重新连接 NAS 同步曲库。");
             notifyChanged();
             return;
         }
@@ -194,6 +216,26 @@ public class PlayerController {
         notifyChanged();
     }
 
+    public void seekTo(int seconds) {
+        if (currentSong == null) {
+            return;
+        }
+
+        int duration = durationSec();
+        int target = duration > 0 ? Math.max(0, Math.min(seconds, duration)) : Math.max(0, seconds);
+        positionSec = target;
+        if (isStreamingCurrent() && mediaPlayer != null && streamPrepared) {
+            try {
+                mediaPlayer.seekTo(target * 1000);
+                if (playing) {
+                    startStreamIfReady();
+                }
+            } catch (IllegalStateException ignored) {
+            }
+        }
+        notifyChanged();
+    }
+
     public void moveQueueItem(int from, int to) {
         if (from < 0 || from >= queue.size() || to < 0 || to >= queue.size() || from == to) {
             return;
@@ -207,6 +249,8 @@ public class PlayerController {
     private void prepareStreamIfNeeded() {
         releaseStream();
         if (!isStreamingCurrent()) {
+            playing = false;
+            notifyError("当前歌曲没有可播放音频流，请重新连接 NAS 同步曲库。");
             return;
         }
         try {
@@ -215,7 +259,7 @@ public class PlayerController {
                     .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                     .setUsage(AudioAttributes.USAGE_MEDIA)
                     .build());
-            mediaPlayer.setDataSource(currentSong.streamUrl);
+            mediaPlayer.setDataSource(streamProxy.localUrl(currentSong.streamUrl));
             mediaPlayer.setOnPreparedListener(player -> {
                 streamPrepared = true;
                 if (playing) {
@@ -227,6 +271,7 @@ public class PlayerController {
             mediaPlayer.setOnErrorListener((player, what, extra) -> {
                 playing = false;
                 streamPrepared = false;
+                notifyError("播放失败，请检查 NAS HTTP 5000 端口或音频流权限。");
                 notifyChanged();
                 return true;
             });
@@ -234,6 +279,7 @@ public class PlayerController {
         } catch (Exception e) {
             releaseStream();
             playing = false;
+            notifyError("播放失败：" + readableError(e));
         }
     }
 
@@ -286,5 +332,19 @@ public class PlayerController {
         if (listener != null) {
             listener.onPlaybackChanged();
         }
+    }
+
+    private void notifyError(String message) {
+        if (listener != null) {
+            listener.onPlaybackError(message);
+        }
+    }
+
+    private String readableError(Exception e) {
+        String message = e.getMessage();
+        if (message == null || message.trim().isEmpty()) {
+            return e.getClass().getSimpleName();
+        }
+        return message;
     }
 }

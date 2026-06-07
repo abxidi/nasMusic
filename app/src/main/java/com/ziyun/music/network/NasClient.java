@@ -333,6 +333,28 @@ public class NasClient {
         return baseUrl != null && sid != null && !sid.isEmpty();
     }
 
+    public void restoreSession(String baseUrl, String sid, boolean relaxedHttps) {
+        if (baseUrl == null || baseUrl.trim().isEmpty() || sid == null || sid.trim().isEmpty()) {
+            return;
+        }
+        this.baseUrl = baseUrl.trim();
+        this.sid = sid.trim();
+        this.relaxedHttpsForSession = relaxedHttps;
+        apiSpecs.clear();
+    }
+
+    public String sessionBaseUrl() {
+        return baseUrl == null ? "" : baseUrl;
+    }
+
+    public String sessionSid() {
+        return sid == null ? "" : sid;
+    }
+
+    public boolean isRelaxedHttpsForSession() {
+        return relaxedHttpsForSession;
+    }
+
     public void configureBaseUrl(String address) {
         if (address == null || address.trim().isEmpty()) {
             return;
@@ -417,7 +439,7 @@ public class NasClient {
         }
 
         ApiSpec stream = api(API_STREAM, "AudioStation/stream.cgi", 2);
-        return new StringBuilder(baseUrl)
+        return new StringBuilder(playbackBaseUrl())
                 .append("/webapi/")
                 .append(stream.path)
                 .append("?api=").append(enc(API_STREAM))
@@ -426,6 +448,23 @@ public class NasClient {
                 .append("&id=").append(enc(songId))
                 .append("&_sid=").append(enc(sid))
                 .toString();
+    }
+
+    private String playbackBaseUrl() {
+        if (!relaxedHttpsForSession || baseUrl == null || !baseUrl.startsWith("https://")) {
+            return baseUrl;
+        }
+
+        try {
+            URL url = new URL(baseUrl);
+            int port = url.getPort();
+            if (port == 5001 || (port < 0 && isLocalAddressUrl(baseUrl))) {
+                return "http://" + url.getHost() + ":5000";
+            }
+        } catch (Exception ignored) {
+            return baseUrl;
+        }
+        return baseUrl;
     }
 
     public void logout() {
@@ -517,18 +556,74 @@ public class NasClient {
     }
 
     private int durationSec(JSONObject item) {
-        int direct = item.optInt("duration", 0);
+        int direct = durationValue(item.opt("duration"));
         if (direct > 0) {
-            return direct > 10000 ? direct / 1000 : direct;
+            return direct;
         }
 
-        JSONObject audio = item.optJSONObject("song_audio");
-        int nested = audio == null ? 0 : audio.optInt("duration", 0);
-        if (nested > 0) {
-            return nested > 10000 ? nested / 1000 : nested;
+        int audio = durationValue(nestedValue(item, "song_audio", "duration"));
+        if (audio > 0) {
+            return audio;
         }
 
-        return 240;
+        int tag = durationValue(nestedValue(item, "song_tag", "duration"));
+        if (tag > 0) {
+            return tag;
+        }
+
+        return 0;
+    }
+
+    private Object nestedValue(JSONObject object, String child, String key) {
+        JSONObject nested = object.optJSONObject(child);
+        return nested == null ? null : nested.opt(key);
+    }
+
+    private int durationValue(Object value) {
+        if (value == null) {
+            return 0;
+        }
+        if (value instanceof Number) {
+            long raw = ((Number) value).longValue();
+            return normalizeDuration(raw);
+        }
+
+        String text = value.toString().trim();
+        if (text.isEmpty()) {
+            return 0;
+        }
+        if (text.contains(":")) {
+            String[] parts = text.split(":");
+            int total = 0;
+            for (String part : parts) {
+                total = total * 60 + safeInt(part);
+            }
+            return total;
+        }
+        return normalizeDuration(safeLong(text));
+    }
+
+    private int normalizeDuration(long raw) {
+        if (raw <= 0) {
+            return 0;
+        }
+        return (int) (raw > 10000 ? raw / 1000 : raw);
+    }
+
+    private int safeInt(String value) {
+        try {
+            return Integer.parseInt(value.trim());
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private long safeLong(String value) {
+        try {
+            return Long.parseLong(value.trim());
+        } catch (Exception e) {
+            return 0L;
+        }
     }
 
     private JSONArray songArray(JSONObject data) {

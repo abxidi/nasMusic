@@ -9,6 +9,9 @@ public class NasConnectionStore {
     private static final String KEY_ACCOUNT = "account";
     private static final String KEY_LAST_SYNC_COUNT = "last_sync_count";
     private static final String KEY_LAST_SYNC_TIME = "last_sync_time";
+    private static final String KEY_SESSION_BASE_URL = "session_base_url";
+    private static final String KEY_SESSION_SID = "session_sid";
+    private static final String KEY_SESSION_RELAXED_HTTPS = "session_relaxed_https";
 
     private final SharedPreferences preferences;
 
@@ -21,7 +24,10 @@ public class NasConnectionStore {
                 preferences.getString(KEY_ADDRESS, ""),
                 preferences.getString(KEY_ACCOUNT, ""),
                 preferences.getInt(KEY_LAST_SYNC_COUNT, 0),
-                preferences.getLong(KEY_LAST_SYNC_TIME, 0L)
+                preferences.getLong(KEY_LAST_SYNC_TIME, 0L),
+                preferences.getString(KEY_SESSION_BASE_URL, ""),
+                preferences.getString(KEY_SESSION_SID, ""),
+                preferences.getBoolean(KEY_SESSION_RELAXED_HTTPS, false)
         );
     }
 
@@ -39,6 +45,14 @@ public class NasConnectionStore {
                 .apply();
     }
 
+    public void saveSession(String baseUrl, String sid, boolean relaxedHttps) {
+        preferences.edit()
+                .putString(KEY_SESSION_BASE_URL, safe(baseUrl))
+                .putString(KEY_SESSION_SID, safe(sid))
+                .putBoolean(KEY_SESSION_RELAXED_HTTPS, relaxedHttps)
+                .apply();
+    }
+
     public void clear() {
         preferences.edit().clear().apply();
     }
@@ -52,12 +66,18 @@ public class NasConnectionStore {
         public final String account;
         public final int lastSyncCount;
         public final long lastSyncTime;
+        public final String sessionBaseUrl;
+        public final String sessionSid;
+        public final boolean sessionRelaxedHttps;
 
-        private Profile(String address, String account, int lastSyncCount, long lastSyncTime) {
+        private Profile(String address, String account, int lastSyncCount, long lastSyncTime, String sessionBaseUrl, String sessionSid, boolean sessionRelaxedHttps) {
             this.address = address;
             this.account = account;
             this.lastSyncCount = lastSyncCount;
             this.lastSyncTime = lastSyncTime;
+            this.sessionBaseUrl = sessionBaseUrl;
+            this.sessionSid = sessionSid;
+            this.sessionRelaxedHttps = sessionRelaxedHttps;
         }
 
         public boolean hasConnectionInfo() {
@@ -66,6 +86,10 @@ public class NasConnectionStore {
 
         public boolean hasSyncedLibrary() {
             return lastSyncCount > 0;
+        }
+
+        public boolean hasSession() {
+            return !sessionBaseUrl.isEmpty() && !sessionSid.isEmpty();
         }
     }
 }

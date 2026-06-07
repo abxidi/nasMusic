@@ -23,6 +23,7 @@ import android.widget.Toast;
 import com.ziyun.music.data.MusicRepository;
 import com.ziyun.music.data.MusicLibraryStore;
 import com.ziyun.music.data.NasConnectionStore;
+import com.ziyun.music.model.Album;
 import com.ziyun.music.model.Playlist;
 import com.ziyun.music.model.Song;
 import com.ziyun.music.network.NasClient;
@@ -75,22 +76,51 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         repository = new MusicRepository();
-        libraryStore = new MusicLibraryStore(this);
         connectionStore = new NasConnectionStore(this);
+        nasClient = new NasClient();
+        NasConnectionStore.Profile profile = connectionStore.profile();
+        if (profile.hasSession()) {
+            nasClient.restoreSession(profile.sessionBaseUrl, profile.sessionSid, profile.sessionRelaxedHttps);
+        }
+
+        libraryStore = new MusicLibraryStore(this);
         List<Song> savedSongs = libraryStore.loadSongs();
         if (!savedSongs.isEmpty()) {
-            repository.replaceWithNasSongs(savedSongs);
+            repository.replaceWithNasSongs(withCurrentStreamUrls(savedSongs));
         }
-        nasClient = new NasClient();
         player = new PlayerController(repository.songs());
         player.setListener(this);
 
         root = new FrameLayout(this);
         setContentView(root);
         show(Screen.SPLASH);
+        if (profile.hasSession()) {
+            refreshNasLibraryFromRestoredSession();
+        }
 
         splashTask = () -> show(firstScreenAfterSplash());
         handler.postDelayed(splashTask, 900);
+    }
+
+    private void refreshNasLibraryFromRestoredSession() {
+        networkExecutor.execute(() -> {
+            try {
+                List<Song> songs = nasClient.fetchSongs();
+                if (songs.isEmpty()) {
+                    return;
+                }
+                runOnUiThread(() -> {
+                    repository.replaceWithNasSongs(songs);
+                    libraryStore.saveSongs(songs);
+                    connectionStore.saveSyncStats(songs.size());
+                    player.playQueue(repository.songs(), 0);
+                    syncPlaybackUi(root);
+                });
+            } catch (Exception e) {
+                connectionStore.saveSession("", "", false);
+                runOnUiThread(() -> toast("NAS 会话已过期，请重新登录以恢复播放流"));
+            }
+        });
     }
 
     private Screen firstScreenAfterSplash() {
@@ -117,6 +147,11 @@ public class MainActivity extends Activity implements PlayerController.Listener 
     @Override
     public void onPlaybackChanged() {
         runOnUiThread(() -> syncPlaybackUi(root));
+    }
+
+    @Override
+    public void onPlaybackError(String message) {
+        runOnUiThread(() -> toast(message));
     }
 
     private void show(Screen screen) {
@@ -197,24 +232,21 @@ public class MainActivity extends Activity implements PlayerController.Listener 
                 break;
             case HOME:
                 bindConnectionSummary(page);
+                bindHomeData(page);
                 click(page, R.id.home_search_button, () -> show(Screen.SEARCH));
                 click(page, R.id.home_search_entry, () -> show(Screen.SEARCH));
-                bindSong(page, "Lake Lights", false);
-                bindSong(page, "南方夜航", false);
-                bindSong(page, "Private Cloud", false);
                 break;
             case LIBRARY:
+                bindLibraryData(page);
                 click(page, R.id.library_search_button, () -> show(Screen.SEARCH));
-                bindSong(page, "After Rain", false);
-                bindSong(page, "北站以南", false);
-                bindSong(page, "Cold Drive", false);
-                wireText(page, "/music/jazz/live", () -> {
-                    player.playQueue(repository.songs(), 4);
-                    toast("已从 /music/jazz/live 开始播放");
+                wireText(page, currentFolderPlaceholder(), () -> {
+                    player.playQueue(repository.songs(), Math.min(4, Math.max(0, repository.songs().size() - 1)));
+                    toast("已从当前曲库开始播放");
                     syncPlaybackUi(root);
                 });
                 break;
             case PLAYLIST:
+                bindPlaylistData(page);
                 click(page, R.id.playlist_search_button, () -> show(Screen.SEARCH));
                 click(page, R.id.playlist_play_all, () -> {
                     Playlist playlist = repository.primaryPlaylist();
@@ -227,16 +259,10 @@ public class MainActivity extends Activity implements PlayerController.Listener 
                     show(Screen.PLAYER);
                 });
                 click(page, R.id.playlist_download, () -> toast("已加入离线下载队列"));
-                bindPlaylistSong(page, "Moon Bridge");
-                bindPlaylistSong(page, "午夜电台");
-                bindPlaylistSong(page, "Riverside Tape");
-                bindPlaylistSong(page, "城市低频");
-                bindPlaylistSong(page, "Quiet Server");
                 break;
             case SEARCH:
                 click(page, R.id.back_button, () -> show(lastMainScreen));
-                bindSong(page, "Private Cloud", false);
-                bindSong(page, "Cloudless Night", false);
+                bindSearchData(page);
                 wireText(page, "查看专辑", () -> toast("专辑详情将在后续页面接入"));
                 break;
             case PLAYER:
@@ -256,10 +282,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
                     toast(player.isRepeat() ? "已开启循环播放" : "已关闭循环播放");
                 });
                 wireText(page, "清空", () -> toast("清空队列前需要确认"));
-                bindSong(page, "午夜电台", false);
-                bindSong(page, "Riverside Tape", false);
-                bindSong(page, "山谷回声", false);
-                bindSong(page, "Quiet Server", false);
+                bindQueueData(page);
                 break;
             case ME:
                 wireText(page, "DiskStation-Home", () -> show(Screen.CONNECT));
@@ -321,6 +344,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         }
 
         connectionStore.saveProfile(syncResult.address, syncResult.account);
+        connectionStore.saveSession(nasClient.sessionBaseUrl(), nasClient.sessionSid(), nasClient.isRelaxedHttpsForSession());
         if (!syncResult.songs.isEmpty()) {
             connectionStore.saveSyncStats(syncResult.songs.size());
             repository.replaceWithNasSongs(syncResult.songs);
@@ -445,6 +469,7 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         replaceText(page, "DiskStation-Home", nasName);
         replaceText(page, "home-nas.example.com:5001", nasAddress);
         replaceText(page, "内网在线 · FLAC 原始播放", statusText);
+        replaceText(page, "●  内网在线 · FLAC 原始播放", "●  " + statusText);
         replaceText(page, "DSM API 与 Audio Station 能力可用", syncText);
         replaceText(page, "连接诊断正常", nasClient.isConnected() ? "连接诊断正常" : "运行连接诊断");
     }
@@ -487,6 +512,185 @@ public class MainActivity extends Activity implements PlayerController.Listener 
             return "";
         }
         return fields.get(index).getText().toString();
+    }
+
+    private List<Song> withCurrentStreamUrls(List<Song> songs) {
+        if (songs == null || songs.isEmpty() || !nasClient.isConnected()) {
+            return songs == null ? Collections.emptyList() : songs;
+        }
+
+        List<Song> result = new ArrayList<>();
+        for (Song song : songs) {
+            result.add(new Song(
+                    song.id,
+                    song.title,
+                    song.artist,
+                    song.album,
+                    song.folder,
+                    song.format,
+                    song.durationSec,
+                    song.colorStart,
+                    song.colorEnd,
+                    song.coverLetter,
+                    song.downloaded,
+                    song.favorite,
+                    nasClient.streamUrl(song.id)
+            ));
+        }
+        return result;
+    }
+
+    private void bindHomeData(View page) {
+        List<Song> songs = repository.recommendedSongs();
+        bindSongRows(page, new String[]{"Lake Lights", "南方夜航", "Private Cloud"}, songs, repository.songs());
+        replaceText(page, "12 张专辑", repository.albums().size() + " 张专辑");
+    }
+
+    private void bindLibraryData(View page) {
+        List<Song> songs = repository.recentSongs();
+        bindSongRows(page, new String[]{"After Rain", "北站以南", "Cold Drive"}, songs, repository.songs());
+        replaceText(page, "24,812 首 · 1.8 TB · 最近同步 2 分钟前", librarySummaryText());
+        if (!songs.isEmpty()) {
+            replaceText(page, "/music/jazz/live", currentFolderPlaceholder());
+            replaceText(page, "126 个文件 · 可从此处播放", "当前曲库 · 可从此处播放");
+        }
+    }
+
+    private void bindPlaylistData(View page) {
+        Playlist playlist = repository.primaryPlaylist();
+        List<Song> songs = playlist.songs();
+        replaceText(page, "深夜私藏", playlist.title);
+        replaceText(page, "86 首 · 5 小时 42 分钟 · 最近更新 今天 08:16", playlist.description);
+        replaceText(page, "86 首 · 5 小时 42 分钟", songs.size() + " 首 · " + playlist.durationSummary());
+        replaceText(page, "更新于今天 08:16", playlist.description);
+        bindSongRows(page, new String[]{"Moon Bridge", "午夜电台", "Riverside Tape", "城市低频", "Quiet Server"}, songs, songs);
+    }
+
+    private void bindSearchData(View page) {
+        List<Song> songs = repository.search("");
+        replaceText(page, "⌕  cloud", "⌕  当前曲库");
+        bindSongRows(page, new String[]{"Private Cloud", "Cloudless Night"}, songs, repository.songs());
+        replaceText(page, "18 个结果", repository.songs().size() + " 个结果");
+        if (!repository.albums().isEmpty()) {
+            Album album = repository.albums().get(0);
+            replaceText(page, "Cloud Archive", album.title);
+            replaceText(page, "Various Artists · 2024 · 28 首", album.artist + " · " + album.year + " · " + album.songCount + " 首");
+        }
+    }
+
+    private void bindQueueData(View page) {
+        List<Song> queue = player.queue().isEmpty() ? repository.songs() : player.queue();
+        replaceText(page, "顺序播放 · 30 首", "顺序播放 · " + queue.size() + " 首");
+        bindSongRows(page, new String[]{"午夜电台", "Riverside Tape", "山谷回声", "Quiet Server"}, queue, queue);
+    }
+
+    private void bindSongRows(View page, String[] placeholders, List<Song> songs, List<Song> queue) {
+        for (int i = 0; i < placeholders.length && i < songs.size(); i++) {
+            bindSongRow(page, placeholders[i], songs.get(i), queue);
+        }
+    }
+
+    private void bindSongRow(View page, String placeholderTitle, Song song, List<Song> queue) {
+        TextView title = findTextView(page, placeholderTitle);
+        if (title == null || song == null) {
+            return;
+        }
+
+        View row = songRow(title);
+        List<TextView> rowTexts = collect(row, TextView.class);
+        int titleIndex = rowTexts.indexOf(title);
+        title.setText(song.title);
+
+        TextView cover = firstCoverText(rowTexts, titleIndex);
+        if (cover != null) {
+            cover.setText(song.coverLetter);
+        }
+
+        TextView meta = titleIndex >= 0 && titleIndex + 1 < rowTexts.size() ? rowTexts.get(titleIndex + 1) : null;
+        if (meta != null && !"···".contentEquals(meta.getText())) {
+            meta.setText(song.qualityText());
+        }
+
+        TextView duration = durationTextView(rowTexts);
+        if (duration != null) {
+            duration.setText(song.durationText());
+        }
+
+        row.setOnClickListener(v -> {
+            player.playSong(song, queue == null || queue.isEmpty() ? repository.songs() : queue);
+            syncPlaybackUi(root);
+            toast("正在播放：" + song.title);
+        });
+    }
+
+    private TextView findTextView(View rootView, String text) {
+        for (TextView view : collect(rootView, TextView.class)) {
+            if (text.contentEquals(view.getText())) {
+                return view;
+            }
+        }
+        return null;
+    }
+
+    private View songRow(TextView title) {
+        ViewParent parent = title.getParent();
+        if (parent instanceof View) {
+            View row = (View) parent;
+            ViewParent grandParent = row.getParent();
+            if (grandParent instanceof View) {
+                return (View) grandParent;
+            }
+            return row;
+        }
+        return title;
+    }
+
+    private TextView firstCoverText(List<TextView> rowTexts, int titleIndex) {
+        if (titleIndex <= 0) {
+            return null;
+        }
+        TextView candidate = rowTexts.get(0);
+        String text = candidate.getText().toString();
+        if (text.matches("\\d+")) {
+            return null;
+        }
+        return candidate;
+    }
+
+    private TextView durationTextView(List<TextView> rowTexts) {
+        for (TextView view : rowTexts) {
+            if (view.getText().toString().matches("\\d+:\\d{2}")) {
+                return view;
+            }
+        }
+        return null;
+    }
+
+    private String librarySummaryText() {
+        NasConnectionStore.Profile profile = connectionStore.profile();
+        int count = profile.hasSyncedLibrary() ? profile.lastSyncCount : repository.songs().size();
+        return count + " 首 · " + repository.albums().size() + " 张专辑 · " + formatSyncTime(profile.lastSyncTime);
+    }
+
+    private String currentFolderPlaceholder() {
+        List<Song> songs = repository.recentSongs();
+        if (songs.isEmpty()) {
+            return "/music";
+        }
+        return songs.get(0).folder;
+    }
+
+    private String totalDurationText(List<Song> songs) {
+        int total = 0;
+        for (Song song : songs) {
+            total += Math.max(0, song.durationSec);
+        }
+        int hours = total / 3600;
+        int minutes = (total % 3600) / 60;
+        if (hours > 0) {
+            return hours + " 小时 " + minutes + " 分钟";
+        }
+        return minutes + " 分钟";
     }
 
     private void bindSong(View page, String title, boolean openPlayer) {
@@ -537,11 +741,58 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         setText(page, R.id.mini_play, player.isPlaying() ? "Ⅱ" : "▶");
         setText(page, R.id.player_title, song.title);
         setText(page, R.id.player_artist, song.artist);
+        setText(page, R.id.player_elapsed, durationText(player.positionSec()));
+        setText(page, R.id.player_duration, durationText(player.durationSec()));
+        syncPlayerProgress(page);
         setPlayerPlayIcon(page, player.isPlaying());
         bindPlayerRecord(page, song);
     }
 
+    private void syncPlayerProgress(View page) {
+        View played = page.findViewById(R.id.player_progress_played);
+        View thumb = page.findViewById(R.id.player_progress_thumb);
+        int duration = player.durationSec();
+        if (played == null || thumb == null) {
+            return;
+        }
+
+        View parent = played.getParent() instanceof View ? (View) played.getParent() : null;
+        if (parent == null || parent.getWidth() <= 0) {
+            played.post(() -> syncPlayerProgress(page));
+            return;
+        }
+
+        if (duration <= 0) {
+            updateProgressViews(played, thumb, parent.getWidth(), 0);
+            return;
+        }
+
+        float progress = Math.max(0f, Math.min(1f, player.positionSec() / (float) duration));
+        int trackWidth = parent.getWidth();
+        int playedWidth = Math.max(0, Math.round(trackWidth * progress));
+        updateProgressViews(played, thumb, trackWidth, playedWidth);
+    }
+
+    private void updateProgressViews(View played, View thumb, int trackWidth, int playedWidth) {
+        ViewGroup.LayoutParams playedParams = played.getLayoutParams();
+        playedParams.width = playedWidth;
+        played.setLayoutParams(playedParams);
+
+        if (thumb.getLayoutParams() instanceof ViewGroup.MarginLayoutParams) {
+            ViewGroup.MarginLayoutParams params = (ViewGroup.MarginLayoutParams) thumb.getLayoutParams();
+            int thumbWidth = thumb.getWidth() > 0 ? thumb.getWidth() : thumb.getLayoutParams().width;
+            params.leftMargin = Math.max(0, Math.min(trackWidth - thumbWidth, playedWidth - thumbWidth / 2));
+            thumb.setLayoutParams(params);
+        }
+    }
+
+    private String durationText(int seconds) {
+        int safe = Math.max(0, seconds);
+        return String.format(Locale.US, "%02d:%02d", safe / 60, safe % 60);
+    }
+
     private void bindPlayerControls(View page, boolean queueButtonOpensQueue) {
+        bindProgressDrag(page);
         click(page, R.id.player_shuffle, () -> {
             player.toggleShuffle();
             toast(player.isShuffle() ? "已开启随机播放" : "已关闭随机播放");
@@ -568,6 +819,37 @@ public class MainActivity extends Activity implements PlayerController.Listener 
         click(page, R.id.player_download, () -> toast("本曲已缓存"));
         click(page, R.id.player_cast, () -> toast("投放能力将在后续版本接入"));
         click(page, R.id.player_equalizer, () -> toast("均衡器将在后续版本接入"));
+    }
+
+    private void bindProgressDrag(View page) {
+        View bar = page.findViewById(R.id.player_progress_bar);
+        if (bar == null) {
+            return;
+        }
+        bar.setOnTouchListener((view, event) -> {
+            switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                case MotionEvent.ACTION_MOVE:
+                case MotionEvent.ACTION_UP:
+                    seekFromProgressTouch(view, event.getX());
+                    return true;
+                case MotionEvent.ACTION_CANCEL:
+                    return true;
+                default:
+                    return false;
+            }
+        });
+    }
+
+    private void seekFromProgressTouch(View bar, float x) {
+        int duration = player.durationSec();
+        if (duration <= 0 || bar.getWidth() <= 0) {
+            return;
+        }
+        float clamped = Math.max(0f, Math.min(x, bar.getWidth()));
+        int target = Math.round(duration * (clamped / (float) bar.getWidth()));
+        player.seekTo(target);
+        syncPlaybackUi(root);
     }
 
     private void bindQueueDismiss(View page) {
